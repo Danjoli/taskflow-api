@@ -7,6 +7,7 @@ use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
@@ -45,6 +46,15 @@ class AuthController extends Controller
             'data' => [
                 'user' => $user,
                 'token' => $token,
+            ],
+        ]);
+    }
+
+    public function me(Request $request): JsonResponse
+    {
+        return response()->json([
+            'data' => [
+                'user' => $request->user(),
             ],
         ]);
     }
