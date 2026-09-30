@@ -28,3 +28,46 @@ it('registers a user and returns an access token', function () {
 
     expect(User::first()->tokens()->count())->toBe(1);
 });
+
+it('rejects duplicate email addresses', function () {
+    User::factory()->create([
+        'email' => 'danilo@example.com',
+    ]);
+
+    $response = $this->postJson('/api/register', [
+        'name' => 'Danilo',
+        'email' => 'danilo@example.com',
+        'password' => 'Password123!',
+        'password_confirmation' => 'Password123!',
+    ]);
+
+    $response
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['email']);
+});
+
+it('rejects mismatched password confirmation', function () {
+    $response = $this->postJson('/api/register', [
+        'name' => 'Danilo',
+        'email' => 'danilo@example.com',
+        'password' => 'Password123!',
+        'password_confirmation' => 'DifferentPassword123!',
+    ]);
+
+    $response
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['password']);
+});
+
+it('rejects passwords shorter than eight characters', function () {
+    $response = $this->postJson('/api/register', [
+        'name' => 'Danilo',
+        'email' => 'danilo@example.com',
+        'password' => '1234567',
+        'password_confirmation' => '1234567',
+    ]);
+
+    $response
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['password']);
+});

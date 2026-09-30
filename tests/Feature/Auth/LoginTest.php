@@ -61,3 +61,16 @@ it('validates required login fields', function () {
             'password',
         ]);
 });
+
+it('rejects a non-existent email', function () {
+    $response = $this->postJson('/api/login', [
+        'email' => 'nonexistent@example.com',
+        'password' => 'Password123!',
+    ]);
+
+    $response
+        ->assertUnauthorized()
+        ->assertJson([
+            'message' => 'As credenciais fornecidas são inválidas.',
+        ]);
+});
