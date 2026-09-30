@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
@@ -22,5 +24,28 @@ class AuthController extends Controller
                 'token' => $token,
             ],
         ], 201);
+    }
+
+    public function login(LoginRequest $request): JsonResponse
+    {
+        $credentials = $request->validated();
+
+        $user = User::where('email', $credentials['email'])->first();
+
+        if ($user === null || ! Hash::check($credentials['password'], $user->password)) {
+            return response()->json([
+                'message' => 'As credenciais fornecidas são inválidas.',
+            ], 401);
+        }
+
+        $token = $user->createToken('api-token')->plainTextToken;
+
+        return response()->json([
+            'message' => 'Login realizado com sucesso.',
+            'data' => [
+                'user' => $user,
+                'token' => $token,
+            ],
+        ]);
     }
 }
