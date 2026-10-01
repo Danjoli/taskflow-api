@@ -25,7 +25,7 @@ class TaskController extends Controller
         $tasks = $request->user()
             ->tasks()
             ->latest()
-            ->get();
+            ->paginate(15);
 
         return TaskResource::collection($tasks);
     }
