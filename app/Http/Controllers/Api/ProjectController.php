@@ -12,6 +12,7 @@ use App\Models\Project;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Gate;
 
 class ProjectController extends Controller
@@ -64,5 +65,17 @@ class ProjectController extends Controller
         $project->update($request->validated());
 
         return new ProjectResource($project);
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy(Project $project): Response
+    {
+        Gate::authorize('delete', $project);
+
+        $project->delete();
+
+        return response()->noContent();
     }
 }
