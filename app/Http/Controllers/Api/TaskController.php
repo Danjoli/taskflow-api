@@ -3,12 +3,12 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\IndexTaskRequest;
 use App\Http\Requests\StoreTaskRequest;
 use App\Http\Requests\UpdateTaskRequest;
 use App\Http\Resources\TaskResource;
 use App\Models\Task;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Gate;
@@ -18,14 +18,28 @@ class TaskController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request): AnonymousResourceCollection
+    public function index(IndexTaskRequest $request): AnonymousResourceCollection
     {
-        Gate::authorize('viewAny', Task::class);
+        $filters = $request->validated();
 
         $tasks = $request->user()
             ->tasks()
-            ->latest()
-            ->paginate(15);
+            ->when(
+                isset($filters['status']),
+                fn ($query) => $query->where('status', $filters['status'])
+            )
+            ->when(
+                isset($filters['priority']),
+                fn ($query) => $query->where('priority', $filters['priority'])
+            )
+            ->when(
+                isset($filters['due_date']),
+                fn ($query) => $query->where('due_date', $filters['due_date'])
+            )
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->paginate(15)
+            ->withQueryString();
 
         return TaskResource::collection($tasks);
     }
