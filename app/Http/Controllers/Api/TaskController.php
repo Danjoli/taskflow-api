@@ -10,6 +10,7 @@ use App\Models\Task;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Gate;
 
 class TaskController extends Controller
@@ -68,8 +69,12 @@ class TaskController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(Task $task): Response
     {
-        //
+        Gate::authorize('delete', $task);
+
+        $task->delete();
+
+        return response()->noContent();
     }
 }
