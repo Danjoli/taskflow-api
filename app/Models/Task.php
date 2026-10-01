@@ -41,4 +41,9 @@ class Task extends Model
             'due_date' => 'date',
         ];
     }
+
+    public function project(): BelongsTo
+    {
+        return $this->belongsTo(Project::class);
+    }
 }
