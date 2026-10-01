@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
@@ -22,6 +24,9 @@ class TaskController extends Controller
     {
         $filters = $request->validated();
 
+        $sortBy = $filters['sort_by'] ?? 'created_at';
+        $sortDirection = $filters['sort_direction'] ?? 'desc';
+
         $tasks = $request->user()
             ->tasks()
             ->when(
@@ -36,8 +41,8 @@ class TaskController extends Controller
                 isset($filters['due_date']),
                 fn ($query) => $query->where('due_date', $filters['due_date'])
             )
-            ->orderByDesc('created_at')
-            ->orderByDesc('id')
+            ->orderBy($sortBy, $sortDirection)
+            ->orderBy('id', $sortDirection)
             ->paginate(15)
             ->withQueryString();
 

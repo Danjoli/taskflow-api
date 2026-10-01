@@ -32,6 +32,17 @@ class IndexTaskRequest extends FormRequest
             'priority' => ['sometimes', 'required', Rule::enum(TaskPriority::class)],
             'due_date' => ['sometimes', 'required', 'date_format:Y-m-d'],
             'page' => ['sometimes', 'required', 'integer', 'min:1'],
+
+            'sort_by' => [
+                'sometimes',
+                'required',
+                Rule::in(['created_at', 'due_date', 'title']),
+            ],
+            'sort_direction' => [
+                'sometimes',
+                'required',
+                Rule::in(['asc', 'desc']),
+            ],
         ];
     }
 }
