@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreProjectRequest;
+use App\Http\Requests\UpdateProjectRequest;
 use App\Http\Resources\ProjectResource;
 use App\Models\Project;
 use Illuminate\Http\JsonResponse;
@@ -49,6 +50,18 @@ class ProjectController extends Controller
     public function show(Project $project): ProjectResource
     {
         Gate::authorize('view', $project);
+
+        return new ProjectResource($project);
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(
+        UpdateProjectRequest $request,
+        Project $project
+    ): ProjectResource {
+        $project->update($request->validated());
 
         return new ProjectResource($project);
     }
