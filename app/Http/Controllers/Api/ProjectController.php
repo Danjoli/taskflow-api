@@ -7,9 +7,11 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreProjectRequest;
 use App\Http\Resources\ProjectResource;
+use App\Models\Project;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\Gate;
 
 class ProjectController extends Controller
 {
@@ -39,5 +41,15 @@ class ProjectController extends Controller
         return (new ProjectResource($project))
             ->response()
             ->setStatusCode(201);
+    }
+
+    /**
+     * Display the specified resource.
+     */
+    public function show(Project $project): ProjectResource
+    {
+        Gate::authorize('view', $project);
+
+        return new ProjectResource($project);
     }
 }
