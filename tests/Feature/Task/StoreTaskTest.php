@@ -86,3 +86,18 @@ it('uses default status and priority when omitted', function () {
         ->assertJsonPath('data.status', 'pending')
         ->assertJsonPath('data.priority', 'medium');
 });
+
+it('rejects null status and priority', function () {
+    Sanctum::actingAs(User::factory()->create());
+
+    $this->postJson('/api/tasks', [
+        'title' => 'Estudar Laravel',
+        'status' => null,
+        'priority' => null,
+    ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors([
+            'status',
+            'priority',
+        ]);
+});
