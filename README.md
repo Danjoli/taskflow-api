@@ -116,6 +116,9 @@ Os dados do PostgreSQL, Redis e as dependências ficam em volumes nomeados. Use
 `docker compose down -v` somente quando quiser apagar deliberadamente todos os
 dados locais desse ambiente. As portas podem ser alteradas em `.env` por meio
 de `APP_PORT`, `VITE_PORT`, `DB_FORWARD_PORT` e `REDIS_FORWARD_PORT`.
+As credenciais internas do PostgreSQL Docker usam as variáveis
+`DOCKER_DB_DATABASE`, `DOCKER_DB_USERNAME` e `DOCKER_DB_PASSWORD`, isoladas das
+variáveis `DB_*` utilizadas pelo PHP executado diretamente na máquina.
 
 ## Instalação rápida
 
