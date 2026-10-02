@@ -59,4 +59,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(Comment::class);
     }
+
+    public function taskActivities(): HasMany
+    {
+        return $this->hasMany(TaskActivity::class);
+    }
 }
