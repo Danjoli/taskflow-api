@@ -85,6 +85,11 @@ class Task extends Model
         return $this->hasMany(TaskActivity::class);
     }
 
+    public function deadlineNotifications(): HasMany
+    {
+        return $this->hasMany(TaskDeadlineNotification::class);
+    }
+
     public function isOverdue(?CarbonInterface $today = null): bool
     {
         $today ??= CarbonImmutable::today(config('app.timezone'));
