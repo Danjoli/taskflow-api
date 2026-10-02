@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\TaskDeadlineFilter;
 use App\Enums\TaskPriority;
 use App\Enums\TaskStatus;
 use App\Models\Task;
@@ -61,6 +62,18 @@ class IndexTaskRequest extends FormRequest
                         ->where('user_id', $this->user()->id)
                         ->whereNull('parent_id')
                 ),
+            ],
+            'deadline' => [
+                'sometimes',
+                'required',
+                Rule::enum(TaskDeadlineFilter::class),
+            ],
+            'days' => [
+                'sometimes',
+                'integer',
+                'min:1',
+                'max:365',
+                'prohibited_unless:deadline,due_soon',
             ],
             'page' => ['sometimes', 'required', 'integer', 'min:1'],
 

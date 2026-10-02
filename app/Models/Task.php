@@ -4,9 +4,12 @@ namespace App\Models;
 
 use App\Enums\TaskPriority;
 use App\Enums\TaskStatus;
+use Carbon\CarbonImmutable;
+use Carbon\CarbonInterface;
 use Database\Factories\TaskFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -80,5 +83,46 @@ class Task extends Model
     public function activities(): HasMany
     {
         return $this->hasMany(TaskActivity::class);
+    }
+
+    public function isOverdue(?CarbonInterface $today = null): bool
+    {
+        $today ??= CarbonImmutable::today(config('app.timezone'));
+
+        return $this->due_date !== null
+            && $this->due_date->lt($today)
+            && in_array(
+                $this->status,
+                [TaskStatus::Pending, TaskStatus::InProgress],
+                true
+            );
+    }
+
+    public function scopeOverdue(
+        Builder $query,
+        CarbonInterface $today
+    ): Builder {
+        return $query
+            ->whereDate('due_date', '<', $today->toDateString())
+            ->whereIn('status', [
+                TaskStatus::Pending->value,
+                TaskStatus::InProgress->value,
+            ]);
+    }
+
+    public function scopeDueSoon(
+        Builder $query,
+        CarbonInterface $today,
+        int $days
+    ): Builder {
+        return $query
+            ->whereBetween('due_date', [
+                $today->toDateString(),
+                $today->addDays($days)->toDateString(),
+            ])
+            ->whereIn('status', [
+                TaskStatus::Pending->value,
+                TaskStatus::InProgress->value,
+            ]);
     }
 }
