@@ -66,18 +66,58 @@ compostas de tarefas e histórico usam transações quando precisam ser atômica
 
 ## Requisitos locais
 
-- PHP 8.3 ou superior, com extensões compatíveis com Laravel e PostgreSQL.
-- Composer 2.
-- PostgreSQL.
-- Redis ou Docker Desktop.
-- Node.js e npm para compilar os assets da página inicial.
+- Docker Desktop com Docker Compose, para o fluxo recomendado; ou
+- PHP 8.3 ou superior, Composer 2, PostgreSQL, Redis, Node.js e npm, para o
+  fluxo manual.
 - Git.
 
 As versões usadas pelo CI são PHP 8.5 e PostgreSQL 18.
 
+## Ambiente Docker
+
+O ambiente Docker inclui Nginx, PHP-FPM, PostgreSQL, Redis, worker de filas,
+scheduler e Vite. Na primeira execução, a imagem instala as dependências e o
+serviço `setup` aplica as migrations automaticamente:
+
+```bash
+docker compose up -d --build
+```
+
+A API ficará disponível em `http://localhost:8000`. Confira o estado dos
+serviços e o health check da aplicação:
+
+```bash
+docker compose ps
+curl http://localhost:8000/up
+```
+
+Execute comandos Laravel e verificações dentro do container:
+
+```bash
+docker compose exec app php artisan about
+docker compose run --rm test
+docker compose exec app composer analyse
+docker compose exec app vendor/bin/pint --test
+```
+
+Os testes usam o banco isolado `taskflow_test`; o serviço de teste nunca aponta
+para o banco `taskflow_dev` da aplicação.
+
+Para acompanhar os processos ou encerrar o ambiente:
+
+```bash
+docker compose logs -f app worker scheduler
+docker compose down
+```
+
+Os dados do PostgreSQL, Redis e as dependências ficam em volumes nomeados. Use
+`docker compose down -v` somente quando quiser apagar deliberadamente todos os
+dados locais desse ambiente. As portas podem ser alteradas em `.env` por meio
+de `APP_PORT`, `VITE_PORT`, `DB_FORWARD_PORT` e `REDIS_FORWARD_PORT`.
+
 ## Instalação rápida
 
-Clone e prepare a aplicação:
+Para executar sem Docker, clone e prepare a aplicação:
 
 ```bash
 git clone https://github.com/Danjoli/taskflow-api.git
