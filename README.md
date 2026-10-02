@@ -110,6 +110,35 @@ php artisan redis:check cache
 php artisan redis:check queue
 ```
 
+## Filas e workers
+
+Em desenvolvimento e produção, `QUEUE_CONNECTION=redis` envia jobs para o
+banco Redis reservado para filas. Inicie um worker:
+
+```bash
+php artisan queue:work redis --queue=default --sleep=1 --tries=3 --timeout=60
+```
+
+O worker deve permanecer ativo por um gerenciador de processos no ambiente de
+produção. Após cada deploy, solicite uma reinicialização graciosa:
+
+```bash
+php artisan queue:restart
+```
+
+Consulte jobs que esgotaram as tentativas:
+
+```bash
+php artisan queue:failed
+```
+
+Para reprocessar ou remover uma falha:
+
+```bash
+php artisan queue:retry <id>
+php artisan queue:forget <id>
+```
+
 Para interromper o serviço local:
 
 ```bash
