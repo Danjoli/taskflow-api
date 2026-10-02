@@ -63,6 +63,26 @@ jobs:
       - name: Build development container
         run: docker build --target development --tag taskflow-api:ci .
 
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Prepare Laravel environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate --force
+
+      - name: Run database migrations
+        run: php artisan migrate --force
+
+      - name: Run Pest tests
+        run: ./vendor/bin/pest
+
+      - name: Run static analysis
+        run: composer analyse
+
+      - name: Check code formatting
+        run: ./vendor/bin/pint --test
+
       - name: Run Postman end-to-end collection
         env:
           APP_PORT: 8001
@@ -85,23 +105,3 @@ jobs:
           DB_FORWARD_PORT: 5433
           REDIS_FORWARD_PORT: 6380
         run: docker compose down --volumes
-
-      - name: Install dependencies
-        run: composer install --no-interaction --prefer-dist --no-progress
-
-      - name: Prepare Laravel environment
-        run: |
-          cp .env.example .env
-          php artisan key:generate --force
-
-      - name: Run database migrations
-        run: php artisan migrate --force
-
-      - name: Run Pest tests
-        run: ./vendor/bin/pest
-
-      - name: Run static analysis
-        run: composer analyse
-
-      - name: Check code formatting
-        run: ./vendor/bin/pint --test
