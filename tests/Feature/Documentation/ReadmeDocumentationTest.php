@@ -1,0 +1,30 @@
+<?php
+
+declare(strict_types=1);
+
+it('documents the project setup, usage, quality checks, and production flow', function () {
+    $contents = file_get_contents(base_path('README.md'));
+
+    expect($contents)->not->toBeFalse()
+        ->and($contents)->toContain(
+            '## Arquitetura',
+            '## Instalação rápida',
+            '## Endpoints principais',
+            '## Demonstração rápida',
+            '## Testes e qualidade',
+            '## Produção',
+        )
+        ->and($contents)->not->toContain('serão implementadas nas próximas etapas');
+});
+
+it('keeps every referenced project document available', function (string $path) {
+    expect(file_exists(base_path($path)))
+        ->toBeTrue("The README reference [{$path}] does not exist.");
+})->with([
+    'OpenAPI specification' => 'docs/openapi.json',
+    'API examples' => 'docs/api-examples.md',
+    'HTTP collection' => 'docs/taskflow-api.http',
+    'deployment runbook' => 'docs/deployment.md',
+    'production environment example' => '.env.production.example',
+    'CI workflow' => '.github/workflows/ci.yml',
+]);
