@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\TaskDeadlineFilter;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\IndexTaskRequest;
 use App\Http\Requests\StoreTaskRequest;
@@ -11,6 +12,7 @@ use App\Http\Requests\UpdateTaskRequest;
 use App\Http\Resources\TaskResource;
 use App\Models\Task;
 use App\Services\TaskActivityRecorder;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
@@ -32,6 +34,7 @@ class TaskController extends Controller
 
         $sortBy = $filters['sort_by'] ?? 'created_at';
         $sortDirection = $filters['sort_direction'] ?? 'desc';
+        $today = CarbonImmutable::today(config('app.timezone'));
 
         $tasks = $request->user()
             ->tasks()
@@ -66,6 +69,14 @@ class TaskController extends Controller
             ->when(
                 isset($filters['parent_id']),
                 fn ($query) => $query->where('parent_id', $filters['parent_id'])
+            )
+            ->when(
+                ($filters['deadline'] ?? null) === TaskDeadlineFilter::Overdue->value,
+                fn ($query) => $query->overdue($today)
+            )
+            ->when(
+                ($filters['deadline'] ?? null) === TaskDeadlineFilter::DueSoon->value,
+                fn ($query) => $query->dueSoon($today, $filters['days'] ?? 7)
             )
             ->orderBy($sortBy, $sortDirection)
             ->orderBy('id', $sortDirection)
