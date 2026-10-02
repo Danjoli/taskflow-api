@@ -1,0 +1,373 @@
+{
+  "info": {
+    "_postman_id": "9a0fb714-45c2-4a86-b195-0ff3a23cf057",
+    "name": "TaskFlow API — End-to-End",
+    "description": "Fluxo executável da TaskFlow API. Cria dados fictícios, valida os endpoints e remove os recursos ao final.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      { "key": "token", "value": "{{token}}", "type": "string" }
+    ]
+  },
+  "event": [
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "pm.test('Response time is below 5 seconds', function () {",
+          "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+          "});"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    { "key": "app_url", "value": "http://localhost:8000" },
+    { "key": "base_url", "value": "http://localhost:8000/api" },
+    { "key": "password", "value": "Password123!" },
+    { "key": "email", "value": "" },
+    { "key": "token", "value": "" },
+    { "key": "project_id", "value": "" },
+    { "key": "category_id", "value": "" },
+    { "key": "tag_id", "value": "" },
+    { "key": "task_id", "value": "" },
+    { "key": "subtask_id", "value": "" },
+    { "key": "comment_id", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "1. Autenticação",
+      "item": [
+        {
+          "name": "Health check",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{app_url}}/up"
+          },
+          "event": [{
+            "listen": "test",
+            "script": { "type": "text/javascript", "exec": [
+              "pm.test('Application is healthy', function () { pm.response.to.have.status(200); });"
+            ] }
+          }]
+        },
+        {
+          "name": "Cadastrar usuário",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": { "type": "text/javascript", "exec": [
+                "const suffix = `${Date.now()}-${Math.floor(Math.random() * 100000)}`;",
+                "pm.environment.set('email', `taskflow.postman.${suffix}@example.test`);"
+              ] }
+            },
+            {
+              "listen": "test",
+              "script": { "type": "text/javascript", "exec": [
+                "pm.test('User is created', function () { pm.response.to.have.status(201); });",
+                "const payload = pm.response.json();",
+                "pm.expect(payload.data).to.have.property('token');",
+                "pm.environment.set('token', payload.data.token);"
+              ] }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Usuário Postman\",\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\",\n  \"password_confirmation\": \"{{password}}\"\n}" },
+            "url": "{{base_url}}/register"
+          }
+        },
+        {
+          "name": "Consultar usuário atual",
+          "request": { "method": "GET", "header": [{ "key": "Accept", "value": "application/json" }], "url": "{{base_url}}/me" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Authenticated user is returned', function () { pm.response.to.have.status(200); });",
+            "pm.expect(pm.response.json().data.user.email).to.eql(pm.environment.get('email'));"
+          ] } }]
+        },
+        {
+          "name": "Atualizar preferências",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Accept", "value": "application/json" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"timezone\": \"America/Sao_Paulo\",\n  \"deadline_notifications_enabled\": true\n}" },
+            "url": "{{base_url}}/me/preferences"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Preferences are updated', function () { pm.response.to.have.status(200); });",
+            "pm.expect(pm.response.json().data.user.timezone).to.eql('America/Sao_Paulo');"
+          ] } }]
+        },
+        {
+          "name": "Revogar token inicial",
+          "request": { "method": "POST", "header": [{ "key": "Accept", "value": "application/json" }], "url": "{{base_url}}/logout" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Initial token is revoked', function () { pm.response.to.have.status(200); });",
+            "pm.environment.unset('token');"
+          ] } }]
+        },
+        {
+          "name": "Login",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}" },
+            "url": "{{base_url}}/login"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Login succeeds', function () { pm.response.to.have.status(200); });",
+            "const payload = pm.response.json();",
+            "pm.expect(payload.data).to.have.property('token');",
+            "pm.environment.set('token', payload.data.token);"
+          ] } }]
+        }
+      ]
+    },
+    {
+      "name": "2. Organização",
+      "item": [
+        {
+          "name": "Criar projeto",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Projeto Postman\",\n  \"description\": \"Criado pelo fluxo automatizado\"\n}" },
+            "url": "{{base_url}}/projects"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Project is created', function () { pm.response.to.have.status(201); });",
+            "pm.environment.set('project_id', pm.response.json().data.id);"
+          ] } }]
+        },
+        {
+          "name": "Listar projetos",
+          "request": { "method": "GET", "header": [{ "key": "Accept", "value": "application/json" }], "url": "{{base_url}}/projects" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Projects are listed', function () { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Consultar projeto",
+          "request": { "method": "GET", "header": [{ "key": "Accept", "value": "application/json" }], "url": "{{base_url}}/projects/{{project_id}}" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Project is returned', function () { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Atualizar projeto",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Accept", "value": "application/json" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"description\": \"Projeto validado pelo Postman\"\n}" },
+            "url": "{{base_url}}/projects/{{project_id}}"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Project is updated', function () { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Criar categoria",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Categoria Postman\"\n}" },
+            "url": "{{base_url}}/categories"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Category is created', function () { pm.response.to.have.status(201); });",
+            "pm.environment.set('category_id', pm.response.json().data.id);"
+          ] } }]
+        },
+        {
+          "name": "Listar categorias",
+          "request": { "method": "GET", "header": [{ "key": "Accept", "value": "application/json" }], "url": "{{base_url}}/categories" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Categories are listed', function () { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Consultar categoria",
+          "request": { "method": "GET", "header": [{ "key": "Accept", "value": "application/json" }], "url": "{{base_url}}/categories/{{category_id}}" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Category is returned', function () { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Atualizar categoria",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Accept", "value": "application/json" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Categoria Postman Atualizada\"\n}" },
+            "url": "{{base_url}}/categories/{{category_id}}"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Category is updated', function () { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Criar tag",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"postman\"\n}" },
+            "url": "{{base_url}}/tags"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Tag is created', function () { pm.response.to.have.status(201); });",
+            "pm.environment.set('tag_id', pm.response.json().data.id);"
+          ] } }]
+        },
+        {
+          "name": "Listar tags",
+          "request": { "method": "GET", "header": [{ "key": "Accept", "value": "application/json" }], "url": "{{base_url}}/tags" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Tags are listed', function () { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Consultar tag",
+          "request": { "method": "GET", "header": [{ "key": "Accept", "value": "application/json" }], "url": "{{base_url}}/tags/{{tag_id}}" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Tag is returned', function () { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Atualizar tag",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Accept", "value": "application/json" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"postman-e2e\"\n}" },
+            "url": "{{base_url}}/tags/{{tag_id}}"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Tag is updated', function () { pm.response.to.have.status(200); });"] } }]
+        }
+      ]
+    },
+    {
+      "name": "3. Tarefas e colaboração",
+      "item": [
+        {
+          "name": "Criar tarefa",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"title\": \"Validar TaskFlow com Postman\",\n  \"description\": \"Fluxo ponta a ponta\",\n  \"priority\": \"high\",\n  \"due_date\": \"2099-12-31\",\n  \"project_id\": {{project_id}},\n  \"category_id\": {{category_id}},\n  \"tag_ids\": [{{tag_id}}]\n}" },
+            "url": "{{base_url}}/tasks"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Task is created', function () { pm.response.to.have.status(201); });",
+            "const task = pm.response.json().data;",
+            "pm.expect(task.priority).to.eql('high');",
+            "pm.environment.set('task_id', task.id);"
+          ] } }]
+        },
+        {
+          "name": "Listar tarefas com filtros",
+          "request": { "method": "GET", "header": [{ "key": "Accept", "value": "application/json" }], "url": "{{base_url}}/tasks?project_id={{project_id}}&category_id={{category_id}}&tag_id={{tag_id}}&priority=high&sort_by=due_date&sort_direction=asc" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Filtered tasks are listed', function () { pm.response.to.have.status(200); });",
+            "pm.expect(pm.response.json().data).to.be.an('array').that.is.not.empty;"
+          ] } }]
+        },
+        {
+          "name": "Consultar tarefa",
+          "request": { "method": "GET", "header": [{ "key": "Accept", "value": "application/json" }], "url": "{{base_url}}/tasks/{{task_id}}" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Task is returned', function () { pm.response.to.have.status(200); });",
+            "pm.expect(pm.response.json().data.id).to.eql(Number(pm.environment.get('task_id')));"
+          ] } }]
+        },
+        {
+          "name": "Atualizar tarefa",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Accept", "value": "application/json" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"in_progress\",\n  \"priority\": \"medium\"\n}" },
+            "url": "{{base_url}}/tasks/{{task_id}}"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Task is updated', function () { pm.response.to.have.status(200); });",
+            "pm.expect(pm.response.json().data.status).to.eql('in_progress');"
+          ] } }]
+        },
+        {
+          "name": "Criar subtarefa",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"title\": \"Subtarefa Postman\",\n  \"parent_id\": {{task_id}}\n}" },
+            "url": "{{base_url}}/tasks"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Subtask is created', function () { pm.response.to.have.status(201); });",
+            "pm.environment.set('subtask_id', pm.response.json().data.id);"
+          ] } }]
+        },
+        {
+          "name": "Adicionar comentário",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"body\": \"Comentário criado pelo Postman\"\n}" },
+            "url": "{{base_url}}/tasks/{{task_id}}/comments"
+          },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Comment is created', function () { pm.response.to.have.status(201); });",
+            "pm.environment.set('comment_id', pm.response.json().data.id);"
+          ] } }]
+        },
+        {
+          "name": "Listar comentários",
+          "request": { "method": "GET", "header": [{ "key": "Accept", "value": "application/json" }], "url": "{{base_url}}/tasks/{{task_id}}/comments" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Comments are listed', function () { pm.response.to.have.status(200); });"] } }]
+        },
+        {
+          "name": "Listar histórico",
+          "request": { "method": "GET", "header": [{ "key": "Accept", "value": "application/json" }], "url": "{{base_url}}/tasks/{{task_id}}/activities" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Activities are listed', function () { pm.response.to.have.status(200); });",
+            "pm.expect(pm.response.json().data).to.be.an('array').that.is.not.empty;"
+          ] } }]
+        }
+      ]
+    },
+    {
+      "name": "4. Limpeza",
+      "item": [
+        {
+          "name": "Excluir comentário",
+          "request": { "method": "DELETE", "header": [{ "key": "Accept", "value": "application/json" }], "url": "{{base_url}}/tasks/{{task_id}}/comments/{{comment_id}}" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Comment is deleted', function () { pm.response.to.have.status(204); });"] } }]
+        },
+        {
+          "name": "Excluir subtarefa",
+          "request": { "method": "DELETE", "header": [{ "key": "Accept", "value": "application/json" }], "url": "{{base_url}}/tasks/{{subtask_id}}" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Subtask is deleted', function () { pm.response.to.have.status(204); });"] } }]
+        },
+        {
+          "name": "Excluir tarefa",
+          "request": { "method": "DELETE", "header": [{ "key": "Accept", "value": "application/json" }], "url": "{{base_url}}/tasks/{{task_id}}" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Task is deleted', function () { pm.response.to.have.status(204); });"] } }]
+        },
+        {
+          "name": "Excluir tag",
+          "request": { "method": "DELETE", "header": [{ "key": "Accept", "value": "application/json" }], "url": "{{base_url}}/tags/{{tag_id}}" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Tag is deleted', function () { pm.response.to.have.status(204); });"] } }]
+        },
+        {
+          "name": "Excluir categoria",
+          "request": { "method": "DELETE", "header": [{ "key": "Accept", "value": "application/json" }], "url": "{{base_url}}/categories/{{category_id}}" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Category is deleted', function () { pm.response.to.have.status(204); });"] } }]
+        },
+        {
+          "name": "Excluir projeto",
+          "request": { "method": "DELETE", "header": [{ "key": "Accept", "value": "application/json" }], "url": "{{base_url}}/projects/{{project_id}}" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Project is deleted', function () { pm.response.to.have.status(204); });"] } }]
+        },
+        {
+          "name": "Logout final",
+          "request": { "method": "POST", "header": [{ "key": "Accept", "value": "application/json" }], "url": "{{base_url}}/logout" },
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Final token is revoked', function () { pm.response.to.have.status(200); });",
+            "['token', 'email', 'project_id', 'category_id', 'tag_id', 'task_id', 'subtask_id', 'comment_id'].forEach(function (key) { pm.environment.unset(key); });"
+          ] } }]
+        }
+      ]
+    }
+  ]
+}

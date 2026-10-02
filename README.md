@@ -62,6 +62,7 @@ compostas de tarefas e histórico usam transações quando precisam ser atômica
 - [Especificação OpenAPI 3.1](docs/openapi.json)
 - [Guia com requisições e respostas](docs/api-examples.md)
 - [Coleção executável para clientes HTTP](docs/taskflow-api.http)
+- [Coleção Postman e ambiente local](docs/postman/README.md)
 - [Runbook de deploy e rollback](docs/deployment.md)
 
 ## Requisitos locais
@@ -98,6 +99,7 @@ docker compose exec app php artisan about
 docker compose run --rm test
 docker compose exec app composer analyse
 docker compose exec app vendor/bin/pint --test
+docker compose run --rm postman
 ```
 
 Os testes usam o banco isolado `taskflow_test`; o serviço de teste nunca aponta
@@ -114,6 +116,9 @@ Os dados do PostgreSQL, Redis e as dependências ficam em volumes nomeados. Use
 `docker compose down -v` somente quando quiser apagar deliberadamente todos os
 dados locais desse ambiente. As portas podem ser alteradas em `.env` por meio
 de `APP_PORT`, `VITE_PORT`, `DB_FORWARD_PORT` e `REDIS_FORWARD_PORT`.
+As credenciais internas do PostgreSQL Docker usam as variáveis
+`DOCKER_DB_DATABASE`, `DOCKER_DB_USERNAME` e `DOCKER_DB_PASSWORD`, isoladas das
+variáveis `DB_*` utilizadas pelo PHP executado diretamente na máquina.
 
 ## Instalação rápida
 

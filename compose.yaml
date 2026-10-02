@@ -11,9 +11,9 @@ x-app-environment: &app-environment
   DB_CONNECTION: pgsql
   DB_HOST: postgres
   DB_PORT: 5432
-  DB_DATABASE: ${DB_DATABASE:-taskflow_dev}
-  DB_USERNAME: ${DB_USERNAME:-taskflow_app}
-  DB_PASSWORD: ${DB_PASSWORD:-taskflow_local_password}
+  DB_DATABASE: ${DOCKER_DB_DATABASE:-taskflow_dev}
+  DB_USERNAME: ${DOCKER_DB_USERNAME:-taskflow_app}
+  DB_PASSWORD: ${DOCKER_DB_PASSWORD:-taskflow_local_password}
   CACHE_STORE: redis
   SESSION_DRIVER: database
   QUEUE_CONNECTION: redis
@@ -39,11 +39,17 @@ x-app-volumes: &app-volumes
 services:
   setup:
     build: *app-build
-    environment: *app-environment
+    user: root
+    environment:
+      <<: *app-environment
+      COMPOSER_ALLOW_SUPERUSER: "1"
     command: >-
-      sh -c "composer install --no-interaction --prefer-dist --no-progress
+      sh -c "git config --global --add safe.directory /var/www/html
+      && chown -R www-data:www-data vendor storage bootstrap/cache
+      && composer install --no-interaction --prefer-dist --no-progress
       && php artisan package:discover --ansi
-      && php artisan migrate --force"
+      && php artisan migrate --force
+      && chown -R www-data:www-data vendor storage bootstrap/cache"
     volumes: *app-volumes
     depends_on:
       postgres:
@@ -76,18 +82,23 @@ services:
     depends_on:
       app:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1/up"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
     restart: unless-stopped
 
   postgres:
     image: postgres:18-alpine
     environment:
-      POSTGRES_DB: ${DB_DATABASE:-taskflow_dev}
-      POSTGRES_USER: ${DB_USERNAME:-taskflow_app}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-taskflow_local_password}
+      POSTGRES_DB: ${DOCKER_DB_DATABASE:-taskflow_dev}
+      POSTGRES_USER: ${DOCKER_DB_USERNAME:-taskflow_app}
+      POSTGRES_PASSWORD: ${DOCKER_DB_PASSWORD:-taskflow_local_password}
     ports:
       - "${DB_FORWARD_PORT:-5432}:5432"
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - postgres-data:/var/lib/postgresql
       - ./docker/postgres/init-databases.sql:/docker-entrypoint-initdb.d/init-databases.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
@@ -155,6 +166,27 @@ services:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_healthy
+    restart: "no"
+
+  postman:
+    image: postman/newman:6-alpine
+    profiles: ["tools"]
+    command:
+      - run
+      - /etc/newman/TaskFlow-API.postman_collection.json
+      - --environment
+      - /etc/newman/TaskFlow-Local.postman_environment.json
+      - --env-var
+      - app_url=http://nginx
+      - --env-var
+      - base_url=http://nginx/api
+      - --reporters
+      - cli
+    volumes:
+      - ./docs/postman:/etc/newman:ro
+    depends_on:
+      nginx:
         condition: service_healthy
     restart: "no"
 
