@@ -42,4 +42,12 @@ class TaskFactory extends Factory
             'category_id' => $category->id,
         ]);
     }
+
+    public function forParent(Task $parent): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'user_id' => $parent->user_id,
+            'parent_id' => $parent->id,
+        ]);
+    }
 }
