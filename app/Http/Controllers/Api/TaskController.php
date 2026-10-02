@@ -10,6 +10,7 @@ use App\Http\Requests\IndexTaskRequest;
 use App\Http\Requests\StoreTaskRequest;
 use App\Http\Requests\UpdateTaskRequest;
 use App\Http\Resources\TaskResource;
+use App\Jobs\ProcessTaskCreated;
 use App\Models\Task;
 use App\Services\TaskActivityRecorder;
 use App\Services\TaskCache;
@@ -107,6 +108,9 @@ class TaskController extends Controller
 
             return $task->load('tags');
         });
+
+        ProcessTaskCreated::dispatch($task->id, $request->user()->id)
+            ->afterCommit();
 
         return (new TaskResource($task))
             ->response()
