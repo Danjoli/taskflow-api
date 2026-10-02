@@ -14,8 +14,8 @@ FROM node:24-alpine AS frontend-assets
 
 WORKDIR /app
 
-COPY package.json package-lock.json ./
-RUN npm ci
+COPY package.json ./
+RUN npm install --no-audit --no-fund
 
 COPY resources ./resources
 COPY vite.config.js ./
