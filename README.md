@@ -91,7 +91,13 @@ REDIS_PORT=6379
 REDIS_DB=0
 REDIS_CACHE_DB=1
 REDIS_QUEUE_DB=2
+TASK_CACHE_TTL=300
 ```
+
+As leituras individuais de tarefas usam Redis por cinco minutos. O cabeçalho
+`X-Task-Cache` informa `MISS` na primeira consulta e `HIT` nas seguintes,
+permitindo observar o ganho sem expor chaves internas. Defina
+`TASK_CACHE_TTL=0` para desabilitar efetivamente a retenção entre requisições.
 
 Para provedores que entregam uma URL completa, preencha `REDIS_URL`. Nunca
 adicione senhas ou URLs reais ao repositório.
