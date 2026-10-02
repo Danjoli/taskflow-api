@@ -61,7 +61,7 @@ COPY docker/php/php.ini /usr/local/etc/php/conf.d/99-taskflow.ini
 RUN groupmod --gid "${APP_GID}" www-data \
     && usermod --uid "${APP_UID}" --gid "${APP_GID}" www-data \
     && mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache \
-    && chown -R www-data:www-data storage bootstrap/cache
+    && chown -R www-data:www-data vendor storage bootstrap/cache
 
 USER www-data
 

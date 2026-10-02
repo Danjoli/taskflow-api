@@ -39,11 +39,17 @@ x-app-volumes: &app-volumes
 services:
   setup:
     build: *app-build
-    environment: *app-environment
+    user: root
+    environment:
+      <<: *app-environment
+      COMPOSER_ALLOW_SUPERUSER: "1"
     command: >-
-      sh -c "composer install --no-interaction --prefer-dist --no-progress
+      sh -c "git config --global --add safe.directory /var/www/html
+      && chown -R www-data:www-data vendor storage bootstrap/cache
+      && composer install --no-interaction --prefer-dist --no-progress
       && php artisan package:discover --ansi
-      && php artisan migrate --force"
+      && php artisan migrate --force
+      && chown -R www-data:www-data vendor storage bootstrap/cache"
     volumes: *app-volumes
     depends_on:
       postgres:
