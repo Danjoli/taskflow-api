@@ -18,6 +18,7 @@ class TaskResource extends JsonResource
             'id' => $this->id,
             'project_id' => $this->project_id,
             'category_id' => $this->category_id,
+            'parent_id' => $this->parent_id,
             'tags' => TagResource::collection($this->whenLoaded('tags')),
             'title' => $this->title,
             'description' => $this->description,

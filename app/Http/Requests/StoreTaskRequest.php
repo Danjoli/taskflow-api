@@ -65,6 +65,15 @@ class StoreTaskRequest extends FormRequest
                 Rule::exists('tags', 'id')
                     ->where(fn ($query) => $query->where('user_id', $this->user()->id)),
             ],
+            'parent_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('tasks', 'id')->where(
+                    fn ($query) => $query
+                        ->where('user_id', $this->user()->id)
+                        ->whereNull('parent_id')
+                ),
+            ],
         ];
     }
 }
