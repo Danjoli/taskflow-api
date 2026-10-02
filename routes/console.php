@@ -10,4 +10,5 @@ Artisan::command('inspire', function () {
 
 Schedule::command('tasks:dispatch-deadline-reminders')
     ->hourly()
-    ->withoutOverlapping();
+    ->withoutOverlapping(10)
+    ->onOneServer();
