@@ -57,6 +57,10 @@ class TaskController extends Controller
                     fn ($tagQuery) => $tagQuery->whereKey($filters['tag_id'])
                 )
             )
+            ->when(
+                isset($filters['parent_id']),
+                fn ($query) => $query->where('parent_id', $filters['parent_id'])
+            )
             ->orderBy($sortBy, $sortDirection)
             ->orderBy('id', $sortDirection)
             ->paginate(15)

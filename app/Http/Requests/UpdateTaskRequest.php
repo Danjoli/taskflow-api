@@ -8,6 +8,7 @@ use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class UpdateTaskRequest extends FormRequest
 {
@@ -54,6 +55,35 @@ class UpdateTaskRequest extends FormRequest
                 Rule::exists('tags', 'id')
                     ->where(fn ($query) => $query->where('user_id', $this->user()->id)),
             ],
+            'parent_id' => [
+                'sometimes',
+                'nullable',
+                'integer',
+                Rule::notIn([$this->route('task')->id]),
+                Rule::exists('tasks', 'id')->where(
+                    fn ($query) => $query
+                        ->where('user_id', $this->user()->id)
+                        ->whereNull('parent_id')
+                ),
+            ],
+        ];
+    }
+
+    /** @return array<callable(Validator): void> */
+    public function after(): array
+    {
+        return [
+            function (Validator $validator): void {
+                if (
+                    $this->filled('parent_id')
+                    && $this->route('task')->subtasks()->exists()
+                ) {
+                    $validator->errors()->add(
+                        'parent_id',
+                        'A task with subtasks cannot become a subtask.'
+                    );
+                }
+            },
         ];
     }
 }

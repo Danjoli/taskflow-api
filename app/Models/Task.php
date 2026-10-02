@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'user_id',
@@ -21,6 +22,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
     'due_date',
     'project_id',
     'category_id',
+    'parent_id',
 ])]
 #[Hidden([])]
 class Task extends Model
@@ -58,5 +60,15 @@ class Task extends Model
     public function tags(): BelongsToMany
     {
         return $this->belongsToMany(Tag::class);
+    }
+
+    public function parent(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'parent_id');
+    }
+
+    public function subtasks(): HasMany
+    {
+        return $this->hasMany(self::class, 'parent_id');
     }
 }

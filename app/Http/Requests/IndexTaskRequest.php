@@ -52,6 +52,16 @@ class IndexTaskRequest extends FormRequest
                 Rule::exists('tags', 'id')
                     ->where(fn ($query) => $query->where('user_id', $this->user()->id)),
             ],
+            'parent_id' => [
+                'sometimes',
+                'required',
+                'integer',
+                Rule::exists('tasks', 'id')->where(
+                    fn ($query) => $query
+                        ->where('user_id', $this->user()->id)
+                        ->whereNull('parent_id')
+                ),
+            ],
             'page' => ['sometimes', 'required', 'integer', 'min:1'],
 
             'sort_by' => [
