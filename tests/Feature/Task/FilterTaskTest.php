@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -67,6 +68,56 @@ it('filters tasks by due date', function () {
         ->assertJsonPath('data.0.id', $task->id);
 });
 
+it('filters tasks by project', function () {
+    $user = User::factory()->create();
+
+    $project = Project::factory()
+        ->for($user)
+        ->create();
+
+    $otherProject = Project::factory()
+        ->for($user)
+        ->create();
+
+    $projectTask = Task::factory()
+        ->for($user)
+        ->forProject($project)
+        ->create();
+
+    Task::factory()
+        ->for($user)
+        ->forProject($otherProject)
+        ->create();
+
+    Task::factory()
+        ->for($user)
+        ->create();
+
+    Sanctum::actingAs($user);
+
+    $this->getJson("/api/tasks?project_id={$project->id}")
+        ->assertOk()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.id', $projectTask->id)
+        ->assertJsonPath('data.0.project_id', $project->id)
+        ->assertJsonPath('meta.total', 1);
+});
+
+it('rejects filtering by another users project', function () {
+    $user = User::factory()->create();
+    $otherUser = User::factory()->create();
+
+    $otherProject = Project::factory()
+        ->for($otherUser)
+        ->create();
+
+    Sanctum::actingAs($user);
+
+    $this->getJson("/api/tasks?project_id={$otherProject->id}")
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['project_id']);
+});
+
 it('combines multiple filters', function () {
     $user = User::factory()->create();
 
@@ -102,13 +153,14 @@ it('rejects invalid filter values', function () {
     Sanctum::actingAs(User::factory()->create());
 
     $this->getJson(
-        '/api/tasks?status=invalid&priority=urgent&due_date=tomorrow&page=0'
+        '/api/tasks?status=invalid&priority=urgent&due_date=tomorrow&project_id=invalid&page=0'
     )
         ->assertUnprocessable()
         ->assertJsonValidationErrors([
             'status',
             'priority',
             'due_date',
+            'project_id',
             'page',
         ]);
 });

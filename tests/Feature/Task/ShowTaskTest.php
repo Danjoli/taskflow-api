@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -30,6 +31,25 @@ it('allows the owner to view a task', function () {
         ->assertJsonPath('data.id', $task->id)
         ->assertJsonPath('data.title', 'Estudar Laravel')
         ->assertJsonMissingPath('data.user_id');
+});
+
+it('returns the project id associated with the task', function () {
+    $user = User::factory()->create();
+
+    $project = Project::factory()
+        ->for($user)
+        ->create();
+
+    $task = Task::factory()
+        ->for($user)
+        ->forProject($project)
+        ->create();
+
+    Sanctum::actingAs($user);
+
+    $this->getJson("/api/tasks/{$task->id}")
+        ->assertOk()
+        ->assertJsonPath('data.project_id', $project->id);
 });
 
 it('denies access to a task owned by another user', function () {

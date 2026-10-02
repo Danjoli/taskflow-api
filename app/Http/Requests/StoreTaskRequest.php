@@ -45,6 +45,13 @@ class StoreTaskRequest extends FormRequest
 
             'due_date' => ['nullable', 'date_format:Y-m-d'],
             'user_id' => ['prohibited'],
+
+            'project_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('projects', 'id')
+                    ->where(fn ($query) => $query->where('user_id', $this->user()->id)),
+            ],
         ];
     }
 }

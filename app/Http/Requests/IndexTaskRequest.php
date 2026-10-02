@@ -31,6 +31,13 @@ class IndexTaskRequest extends FormRequest
             'status' => ['sometimes', 'required', Rule::enum(TaskStatus::class)],
             'priority' => ['sometimes', 'required', Rule::enum(TaskPriority::class)],
             'due_date' => ['sometimes', 'required', 'date_format:Y-m-d'],
+            'project_id' => [
+                'sometimes',
+                'required',
+                'integer',
+                Rule::exists('projects', 'id')
+                    ->where(fn ($query) => $query->where('user_id', $this->user()->id)),
+            ],
             'page' => ['sometimes', 'required', 'integer', 'min:1'],
 
             'sort_by' => [

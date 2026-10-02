@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -129,4 +130,147 @@ it('prevents changing the task owner', function () {
         'id' => $task->id,
         'user_id' => $user->id,
     ]);
+});
+
+it('allows assigning a task to the users project', function () {
+    $user = User::factory()->create();
+
+    $project = Project::factory()
+        ->for($user)
+        ->create();
+
+    $task = Task::factory()
+        ->for($user)
+        ->create();
+
+    Sanctum::actingAs($user);
+
+    $this->patchJson("/api/tasks/{$task->id}", [
+        'project_id' => $project->id,
+    ])
+        ->assertOk()
+        ->assertJsonPath('data.project_id', $project->id);
+
+    $this->assertDatabaseHas('tasks', [
+        'id' => $task->id,
+        'project_id' => $project->id,
+    ]);
+});
+
+it('allows moving a task between the users projects', function () {
+    $user = User::factory()->create();
+
+    $firstProject = Project::factory()
+        ->for($user)
+        ->create();
+
+    $secondProject = Project::factory()
+        ->for($user)
+        ->create();
+
+    $task = Task::factory()
+        ->for($user)
+        ->forProject($firstProject)
+        ->create();
+
+    Sanctum::actingAs($user);
+
+    $this->patchJson("/api/tasks/{$task->id}", [
+        'project_id' => $secondProject->id,
+    ])->assertOk();
+
+    $this->assertDatabaseHas('tasks', [
+        'id' => $task->id,
+        'project_id' => $secondProject->id,
+    ]);
+});
+
+it('allows removing a task from a project', function () {
+    $user = User::factory()->create();
+
+    $project = Project::factory()
+        ->for($user)
+        ->create();
+
+    $task = Task::factory()
+        ->for($user)
+        ->forProject($project)
+        ->create();
+
+    Sanctum::actingAs($user);
+
+    $this->patchJson("/api/tasks/{$task->id}", [
+        'project_id' => null,
+    ])
+        ->assertOk()
+        ->assertJsonPath('data.project_id', null);
+
+    $this->assertDatabaseHas('tasks', [
+        'id' => $task->id,
+        'project_id' => null,
+    ]);
+});
+
+it('preserves the project when project id is not submitted', function () {
+    $user = User::factory()->create();
+
+    $project = Project::factory()
+        ->for($user)
+        ->create();
+
+    $task = Task::factory()
+        ->for($user)
+        ->forProject($project)
+        ->create();
+
+    Sanctum::actingAs($user);
+
+    $this->patchJson("/api/tasks/{$task->id}", [
+        'title' => 'Título atualizado',
+    ])->assertOk();
+
+    $this->assertDatabaseHas('tasks', [
+        'id' => $task->id,
+        'project_id' => $project->id,
+        'title' => 'Título atualizado',
+    ]);
+});
+
+it('rejects moving a task to another users project', function () {
+    $user = User::factory()->create();
+    $otherUser = User::factory()->create();
+
+    $task = Task::factory()
+        ->for($user)
+        ->create();
+
+    $otherProject = Project::factory()
+        ->for($otherUser)
+        ->create();
+
+    Sanctum::actingAs($user);
+
+    $this->patchJson("/api/tasks/{$task->id}", [
+        'project_id' => $otherProject->id,
+    ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['project_id']);
+
+    expect($task->fresh()->project_id)->toBeNull();
+});
+
+it('rejects a nonexistent project when updating a task', function () {
+    $user = User::factory()->create();
+
+    $task = Task::factory()
+        ->for($user)
+        ->create();
+
+    Sanctum::actingAs($user);
+
+    $this->patchJson("/api/tasks/{$task->id}", [
+        'project_id' => 999999999,
+    ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['project_id']);
 });

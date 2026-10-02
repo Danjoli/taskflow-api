@@ -41,6 +41,10 @@ class TaskController extends Controller
                 isset($filters['due_date']),
                 fn ($query) => $query->where('due_date', $filters['due_date'])
             )
+            ->when(
+                isset($filters['project_id']),
+                fn ($query) => $query->where('project_id', $filters['project_id'])
+            )
             ->orderBy($sortBy, $sortDirection)
             ->orderBy('id', $sortDirection)
             ->paginate(15)
