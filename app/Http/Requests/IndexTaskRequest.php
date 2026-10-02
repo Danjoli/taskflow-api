@@ -38,6 +38,13 @@ class IndexTaskRequest extends FormRequest
                 Rule::exists('projects', 'id')
                     ->where(fn ($query) => $query->where('user_id', $this->user()->id)),
             ],
+            'category_id' => [
+                'sometimes',
+                'required',
+                'integer',
+                Rule::exists('categories', 'id')
+                    ->where(fn ($query) => $query->where('user_id', $this->user()->id)),
+            ],
             'page' => ['sometimes', 'required', 'integer', 'min:1'],
 
             'sort_by' => [

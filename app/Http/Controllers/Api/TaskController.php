@@ -45,6 +45,10 @@ class TaskController extends Controller
                 isset($filters['project_id']),
                 fn ($query) => $query->where('project_id', $filters['project_id'])
             )
+            ->when(
+                isset($filters['category_id']),
+                fn ($query) => $query->where('category_id', $filters['category_id'])
+            )
             ->orderBy($sortBy, $sortDirection)
             ->orderBy('id', $sortDirection)
             ->paginate(15)
