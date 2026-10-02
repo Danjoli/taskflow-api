@@ -71,4 +71,9 @@ class Task extends Model
     {
         return $this->hasMany(self::class, 'parent_id');
     }
+
+    public function comments(): HasMany
+    {
+        return $this->hasMany(Comment::class);
+    }
 }
