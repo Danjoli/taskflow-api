@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\ProjectController;
+use App\Http\Controllers\Api\TagController;
 use App\Http\Controllers\Api\TaskController;
 use Illuminate\Support\Facades\Route;
 
@@ -30,4 +31,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/categories/{category}', [CategoryController::class, 'show']);
     Route::patch('/categories/{category}', [CategoryController::class, 'update']);
     Route::delete('/categories/{category}', [CategoryController::class, 'destroy']);
+
+    Route::get('/tags', [TagController::class, 'index']);
+    Route::post('/tags', [TagController::class, 'store']);
+    Route::get('/tags/{tag}', [TagController::class, 'show']);
+    Route::patch('/tags/{tag}', [TagController::class, 'update']);
+    Route::delete('/tags/{tag}', [TagController::class, 'destroy']);
 });

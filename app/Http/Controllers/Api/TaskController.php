@@ -29,6 +29,7 @@ class TaskController extends Controller
 
         $tasks = $request->user()
             ->tasks()
+            ->with('tags')
             ->when(
                 isset($filters['status']),
                 fn ($query) => $query->where('status', $filters['status'])
@@ -49,6 +50,13 @@ class TaskController extends Controller
                 isset($filters['category_id']),
                 fn ($query) => $query->where('category_id', $filters['category_id'])
             )
+            ->when(
+                isset($filters['tag_id']),
+                fn ($query) => $query->whereHas(
+                    'tags',
+                    fn ($tagQuery) => $tagQuery->whereKey($filters['tag_id'])
+                )
+            )
             ->orderBy($sortBy, $sortDirection)
             ->orderBy('id', $sortDirection)
             ->paginate(15)
@@ -62,11 +70,16 @@ class TaskController extends Controller
      */
     public function store(StoreTaskRequest $request): JsonResponse
     {
+        $validated = $request->validated();
+        $tagIds = $validated['tag_ids'] ?? [];
+        unset($validated['tag_ids']);
+
         $task = $request->user()
             ->tasks()
-            ->create($request->validated());
+            ->create($validated);
 
-        $task->refresh();
+        $task->tags()->sync($tagIds);
+        $task->refresh()->load('tags');
 
         return (new TaskResource($task))
             ->response()
@@ -80,7 +93,7 @@ class TaskController extends Controller
     {
         Gate::authorize('view', $task);
 
-        return new TaskResource($task);
+        return new TaskResource($task->load('tags'));
     }
 
     /**
@@ -88,9 +101,18 @@ class TaskController extends Controller
      */
     public function update(UpdateTaskRequest $request, Task $task): TaskResource
     {
-        $task->update($request->validated());
+        $validated = $request->validated();
+        $hasTagIds = array_key_exists('tag_ids', $validated);
+        $tagIds = $validated['tag_ids'] ?? [];
+        unset($validated['tag_ids']);
 
-        return new TaskResource($task);
+        $task->update($validated);
+
+        if ($hasTagIds) {
+            $task->tags()->sync($tagIds);
+        }
+
+        return new TaskResource($task->load('tags'));
     }
 
     /**
