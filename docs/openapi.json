@@ -1,0 +1,217 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "TaskFlow API",
+    "version": "1.0.0",
+    "license": { "name": "MIT", "identifier": "MIT" },
+    "description": "API multiusuário para autenticação e gerenciamento de tarefas, projetos, categorias, tags, comentários e histórico. Datas usam ISO 8601 e erros de validação usam HTTP 422."
+  },
+  "servers": [{ "url": "/api", "description": "Servidor atual" }],
+  "tags": [
+    { "name": "Auth", "description": "Cadastro, sessão e preferências do usuário" },
+    { "name": "Tasks", "description": "Ciclo de vida, filtros e relacionamentos de tarefas" },
+    { "name": "Comments", "description": "Comentários vinculados a tarefas" },
+    { "name": "Activities", "description": "Histórico imutável de alterações" },
+    { "name": "Projects", "description": "Organização de tarefas em projetos" },
+    { "name": "Categories", "description": "Classificação exclusiva por categoria" },
+    { "name": "Tags", "description": "Classificação de tarefas com múltiplas tags" }
+  ],
+  "paths": {
+    "/register": {
+      "post": {
+        "operationId": "register", "tags": ["Auth"], "summary": "Cadastrar usuário",
+        "security": [], "requestBody": { "$ref": "#/components/requestBodies/Register" },
+        "responses": { "201": { "$ref": "#/components/responses/AuthSuccess" }, "422": { "$ref": "#/components/responses/ValidationError" }, "429": { "$ref": "#/components/responses/TooManyRequests" } }
+      }
+    },
+    "/login": {
+      "post": {
+        "operationId": "login", "tags": ["Auth"], "summary": "Autenticar usuário",
+        "security": [], "requestBody": { "$ref": "#/components/requestBodies/Login" },
+        "responses": { "200": { "$ref": "#/components/responses/AuthSuccess" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "422": { "$ref": "#/components/responses/ValidationError" }, "429": { "$ref": "#/components/responses/TooManyRequests" } }
+      }
+    },
+    "/me": {
+      "get": {
+        "operationId": "getCurrentUser", "tags": ["Auth"], "summary": "Obter usuário autenticado",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "$ref": "#/components/responses/UserSuccess" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "429": { "$ref": "#/components/responses/TooManyRequests" } }
+      }
+    },
+    "/me/preferences": {
+      "patch": {
+        "operationId": "updatePreferences", "tags": ["Auth"], "summary": "Atualizar preferências de notificação",
+        "security": [{ "bearerAuth": [] }], "requestBody": { "$ref": "#/components/requestBodies/Preferences" },
+        "responses": { "200": { "$ref": "#/components/responses/UserSuccess" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "422": { "$ref": "#/components/responses/ValidationError" }, "429": { "$ref": "#/components/responses/TooManyRequests" } }
+      }
+    },
+    "/logout": {
+      "post": {
+        "operationId": "logout", "tags": ["Auth"], "summary": "Revogar token atual",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "$ref": "#/components/responses/MessageSuccess" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "429": { "$ref": "#/components/responses/TooManyRequests" } }
+      }
+    },
+    "/tasks": {
+      "get": {
+        "operationId": "listTasks", "tags": ["Tasks"], "summary": "Listar e filtrar tarefas",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "$ref": "#/components/parameters/Page" }, { "$ref": "#/components/parameters/Status" },
+          { "$ref": "#/components/parameters/Priority" }, { "$ref": "#/components/parameters/DueDate" },
+          { "$ref": "#/components/parameters/ProjectFilter" }, { "$ref": "#/components/parameters/CategoryFilter" },
+          { "$ref": "#/components/parameters/TagFilter" }, { "$ref": "#/components/parameters/ParentFilter" },
+          { "$ref": "#/components/parameters/Deadline" }, { "$ref": "#/components/parameters/Days" },
+          { "$ref": "#/components/parameters/SortBy" }, { "$ref": "#/components/parameters/SortDirection" }
+        ],
+        "responses": { "200": { "$ref": "#/components/responses/TaskCollection" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "422": { "$ref": "#/components/responses/ValidationError" }, "429": { "$ref": "#/components/responses/TooManyRequests" } }
+      },
+      "post": {
+        "operationId": "createTask", "tags": ["Tasks"], "summary": "Criar tarefa",
+        "security": [{ "bearerAuth": [] }], "requestBody": { "$ref": "#/components/requestBodies/CreateTask" },
+        "responses": { "201": { "$ref": "#/components/responses/TaskSuccess" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "422": { "$ref": "#/components/responses/ValidationError" }, "429": { "$ref": "#/components/responses/TooManyRequests" } }
+      }
+    },
+    "/tasks/{task}": {
+      "parameters": [{ "$ref": "#/components/parameters/TaskId" }],
+      "get": { "operationId": "getTask", "tags": ["Tasks"], "summary": "Obter tarefa", "security": [{ "bearerAuth": [] }], "responses": { "200": { "$ref": "#/components/responses/TaskSuccess" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" }, "429": { "$ref": "#/components/responses/TooManyRequests" } } },
+      "patch": { "operationId": "updateTask", "tags": ["Tasks"], "summary": "Atualizar tarefa", "security": [{ "bearerAuth": [] }], "requestBody": { "$ref": "#/components/requestBodies/UpdateTask" }, "responses": { "200": { "$ref": "#/components/responses/TaskSuccess" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" }, "422": { "$ref": "#/components/responses/ValidationError" }, "429": { "$ref": "#/components/responses/TooManyRequests" } } },
+      "delete": { "operationId": "deleteTask", "tags": ["Tasks"], "summary": "Excluir tarefa", "security": [{ "bearerAuth": [] }], "responses": { "204": { "$ref": "#/components/responses/NoContent" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" }, "429": { "$ref": "#/components/responses/TooManyRequests" } } }
+    },
+    "/tasks/{task}/activities": {
+      "parameters": [{ "$ref": "#/components/parameters/TaskId" }],
+      "get": { "operationId": "listTaskActivities", "tags": ["Activities"], "summary": "Listar histórico imutável", "security": [{ "bearerAuth": [] }], "parameters": [{ "$ref": "#/components/parameters/Page" }], "responses": { "200": { "$ref": "#/components/responses/ActivityCollection" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" }, "429": { "$ref": "#/components/responses/TooManyRequests" } } }
+    },
+    "/tasks/{task}/comments": {
+      "parameters": [{ "$ref": "#/components/parameters/TaskId" }],
+      "get": { "operationId": "listTaskComments", "tags": ["Comments"], "summary": "Listar comentários", "security": [{ "bearerAuth": [] }], "parameters": [{ "$ref": "#/components/parameters/Page" }], "responses": { "200": { "$ref": "#/components/responses/CommentCollection" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" }, "429": { "$ref": "#/components/responses/TooManyRequests" } } },
+      "post": { "operationId": "createTaskComment", "tags": ["Comments"], "summary": "Criar comentário", "security": [{ "bearerAuth": [] }], "requestBody": { "$ref": "#/components/requestBodies/CreateComment" }, "responses": { "201": { "$ref": "#/components/responses/CommentSuccess" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" }, "422": { "$ref": "#/components/responses/ValidationError" }, "429": { "$ref": "#/components/responses/TooManyRequests" } } }
+    },
+    "/tasks/{task}/comments/{comment}": {
+      "parameters": [{ "$ref": "#/components/parameters/TaskId" }, { "$ref": "#/components/parameters/CommentId" }],
+      "delete": { "operationId": "deleteTaskComment", "tags": ["Comments"], "summary": "Excluir comentário", "security": [{ "bearerAuth": [] }], "responses": { "204": { "$ref": "#/components/responses/NoContent" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" }, "429": { "$ref": "#/components/responses/TooManyRequests" } } }
+    },
+    "/projects": {
+      "get": { "operationId": "listProjects", "tags": ["Projects"], "summary": "Listar projetos", "security": [{ "bearerAuth": [] }], "parameters": [{ "$ref": "#/components/parameters/Page" }], "responses": { "200": { "$ref": "#/components/responses/ProjectCollection" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "429": { "$ref": "#/components/responses/TooManyRequests" } } },
+      "post": { "operationId": "createProject", "tags": ["Projects"], "summary": "Criar projeto", "security": [{ "bearerAuth": [] }], "requestBody": { "$ref": "#/components/requestBodies/CreateProject" }, "responses": { "201": { "$ref": "#/components/responses/ProjectSuccess" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "422": { "$ref": "#/components/responses/ValidationError" }, "429": { "$ref": "#/components/responses/TooManyRequests" } } }
+    },
+    "/projects/{project}": {
+      "parameters": [{ "$ref": "#/components/parameters/ProjectId" }],
+      "get": { "operationId": "getProject", "tags": ["Projects"], "summary": "Obter projeto", "security": [{ "bearerAuth": [] }], "responses": { "200": { "$ref": "#/components/responses/ProjectSuccess" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" }, "429": { "$ref": "#/components/responses/TooManyRequests" } } },
+      "patch": { "operationId": "updateProject", "tags": ["Projects"], "summary": "Atualizar projeto", "security": [{ "bearerAuth": [] }], "requestBody": { "$ref": "#/components/requestBodies/UpdateProject" }, "responses": { "200": { "$ref": "#/components/responses/ProjectSuccess" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" }, "422": { "$ref": "#/components/responses/ValidationError" }, "429": { "$ref": "#/components/responses/TooManyRequests" } } },
+      "delete": { "operationId": "deleteProject", "tags": ["Projects"], "summary": "Excluir projeto", "security": [{ "bearerAuth": [] }], "responses": { "204": { "$ref": "#/components/responses/NoContent" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" }, "429": { "$ref": "#/components/responses/TooManyRequests" } } }
+    },
+    "/categories": {
+      "get": { "operationId": "listCategories", "tags": ["Categories"], "summary": "Listar categorias", "security": [{ "bearerAuth": [] }], "parameters": [{ "$ref": "#/components/parameters/Page" }], "responses": { "200": { "$ref": "#/components/responses/CategoryCollection" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "429": { "$ref": "#/components/responses/TooManyRequests" } } },
+      "post": { "operationId": "createCategory", "tags": ["Categories"], "summary": "Criar categoria", "security": [{ "bearerAuth": [] }], "requestBody": { "$ref": "#/components/requestBodies/CreateNamedResource" }, "responses": { "201": { "$ref": "#/components/responses/CategorySuccess" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "422": { "$ref": "#/components/responses/ValidationError" }, "429": { "$ref": "#/components/responses/TooManyRequests" } } }
+    },
+    "/categories/{category}": {
+      "parameters": [{ "$ref": "#/components/parameters/CategoryId" }],
+      "get": { "operationId": "getCategory", "tags": ["Categories"], "summary": "Obter categoria", "security": [{ "bearerAuth": [] }], "responses": { "200": { "$ref": "#/components/responses/CategorySuccess" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" }, "429": { "$ref": "#/components/responses/TooManyRequests" } } },
+      "patch": { "operationId": "updateCategory", "tags": ["Categories"], "summary": "Atualizar categoria", "security": [{ "bearerAuth": [] }], "requestBody": { "$ref": "#/components/requestBodies/UpdateNamedResource" }, "responses": { "200": { "$ref": "#/components/responses/CategorySuccess" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" }, "422": { "$ref": "#/components/responses/ValidationError" }, "429": { "$ref": "#/components/responses/TooManyRequests" } } },
+      "delete": { "operationId": "deleteCategory", "tags": ["Categories"], "summary": "Excluir categoria", "security": [{ "bearerAuth": [] }], "responses": { "204": { "$ref": "#/components/responses/NoContent" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" }, "429": { "$ref": "#/components/responses/TooManyRequests" } } }
+    },
+    "/tags": {
+      "get": { "operationId": "listTags", "tags": ["Tags"], "summary": "Listar tags", "security": [{ "bearerAuth": [] }], "parameters": [{ "$ref": "#/components/parameters/Page" }], "responses": { "200": { "$ref": "#/components/responses/TagCollection" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "429": { "$ref": "#/components/responses/TooManyRequests" } } },
+      "post": { "operationId": "createTag", "tags": ["Tags"], "summary": "Criar tag", "security": [{ "bearerAuth": [] }], "requestBody": { "$ref": "#/components/requestBodies/CreateNamedResource" }, "responses": { "201": { "$ref": "#/components/responses/TagSuccess" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "422": { "$ref": "#/components/responses/ValidationError" }, "429": { "$ref": "#/components/responses/TooManyRequests" } } }
+    },
+    "/tags/{tag}": {
+      "parameters": [{ "$ref": "#/components/parameters/TagId" }],
+      "get": { "operationId": "getTag", "tags": ["Tags"], "summary": "Obter tag", "security": [{ "bearerAuth": [] }], "responses": { "200": { "$ref": "#/components/responses/TagSuccess" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" }, "429": { "$ref": "#/components/responses/TooManyRequests" } } },
+      "patch": { "operationId": "updateTag", "tags": ["Tags"], "summary": "Atualizar tag", "security": [{ "bearerAuth": [] }], "requestBody": { "$ref": "#/components/requestBodies/UpdateNamedResource" }, "responses": { "200": { "$ref": "#/components/responses/TagSuccess" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" }, "422": { "$ref": "#/components/responses/ValidationError" }, "429": { "$ref": "#/components/responses/TooManyRequests" } } },
+      "delete": { "operationId": "deleteTag", "tags": ["Tags"], "summary": "Excluir tag", "security": [{ "bearerAuth": [] }], "responses": { "204": { "$ref": "#/components/responses/NoContent" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" }, "429": { "$ref": "#/components/responses/TooManyRequests" } } }
+    }
+  },
+  "components": {
+    "securitySchemes": { "bearerAuth": { "type": "http", "scheme": "bearer", "bearerFormat": "Sanctum token" } },
+    "parameters": {
+      "Page": { "name": "page", "in": "query", "schema": { "type": "integer", "minimum": 1 }, "description": "Página da coleção" },
+      "TaskId": { "name": "task", "in": "path", "required": true, "schema": { "type": "integer" } },
+      "CommentId": { "name": "comment", "in": "path", "required": true, "schema": { "type": "integer" } },
+      "ProjectId": { "name": "project", "in": "path", "required": true, "schema": { "type": "integer" } },
+      "CategoryId": { "name": "category", "in": "path", "required": true, "schema": { "type": "integer" } },
+      "TagId": { "name": "tag", "in": "path", "required": true, "schema": { "type": "integer" } },
+      "Status": { "name": "status", "in": "query", "schema": { "$ref": "#/components/schemas/TaskStatus" } },
+      "Priority": { "name": "priority", "in": "query", "schema": { "$ref": "#/components/schemas/TaskPriority" } },
+      "DueDate": { "name": "due_date", "in": "query", "schema": { "type": "string", "format": "date" } },
+      "ProjectFilter": { "name": "project_id", "in": "query", "schema": { "type": "integer" } },
+      "CategoryFilter": { "name": "category_id", "in": "query", "schema": { "type": "integer" } },
+      "TagFilter": { "name": "tag_id", "in": "query", "schema": { "type": "integer" } },
+      "ParentFilter": { "name": "parent_id", "in": "query", "schema": { "type": "integer" } },
+      "Deadline": { "name": "deadline", "in": "query", "schema": { "type": "string", "enum": ["overdue", "due_soon"] } },
+      "Days": { "name": "days", "in": "query", "description": "Janela de 1 a 365 dias; aceita apenas com deadline=due_soon", "schema": { "type": "integer", "minimum": 1, "maximum": 365, "default": 7 } },
+      "SortBy": { "name": "sort_by", "in": "query", "schema": { "type": "string", "enum": ["created_at", "due_date", "title"], "default": "created_at" } },
+      "SortDirection": { "name": "sort_direction", "in": "query", "schema": { "type": "string", "enum": ["asc", "desc"], "default": "desc" } }
+    },
+    "requestBodies": {
+      "Register": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RegisterInput" } } } },
+      "Login": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/LoginInput" } } } },
+      "Preferences": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PreferencesInput" } } } },
+      "CreateTask": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/TaskInput" } } } },
+      "UpdateTask": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/TaskUpdateInput" } } } },
+      "CreateComment": { "required": true, "content": { "application/json": { "schema": { "type": "object", "required": ["body"], "properties": { "body": { "type": "string", "maxLength": 2000 } } } } } },
+      "CreateProject": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProjectInput" } } } },
+      "UpdateProject": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProjectUpdateInput" } } } },
+      "CreateNamedResource": { "required": true, "content": { "application/json": { "schema": { "type": "object", "required": ["name"], "properties": { "name": { "type": "string", "maxLength": 100 } } } } } },
+      "UpdateNamedResource": { "required": true, "content": { "application/json": { "schema": { "type": "object", "minProperties": 1, "properties": { "name": { "type": "string", "maxLength": 100 } } } } } }
+    },
+    "responses": {
+      "AuthSuccess": { "description": "Usuário e token emitido", "content": { "application/json": { "schema": { "type": "object", "properties": { "message": { "type": "string" }, "data": { "type": "object", "properties": { "user": { "$ref": "#/components/schemas/User" }, "token": { "type": "string" } }, "required": ["user", "token"] } }, "required": ["data"] } } } },
+      "UserSuccess": { "description": "Usuário", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UserEnvelope" } } } },
+      "TaskSuccess": { "description": "Tarefa", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/TaskEnvelope" } } } },
+      "ProjectSuccess": { "description": "Projeto", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProjectEnvelope" } } } },
+      "CategorySuccess": { "description": "Categoria", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CategoryEnvelope" } } } },
+      "TagSuccess": { "description": "Tag", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/TagEnvelope" } } } },
+      "CommentSuccess": { "description": "Comentário", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CommentEnvelope" } } } },
+      "TaskCollection": { "description": "Tarefas paginadas (15 por página)", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PaginatedTasks" } } } },
+      "ProjectCollection": { "description": "Projetos paginados (15 por página)", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PaginatedProjects" } } } },
+      "CategoryCollection": { "description": "Categorias paginadas (15 por página)", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PaginatedCategories" } } } },
+      "TagCollection": { "description": "Tags paginadas (15 por página)", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PaginatedTags" } } } },
+      "CommentCollection": { "description": "Comentários paginados (20 por página)", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PaginatedComments" } } } },
+      "ActivityCollection": { "description": "Atividades paginadas (20 por página)", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PaginatedActivities" } } } },
+      "MessageSuccess": { "description": "Operação concluída", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Message" } } } },
+      "NoContent": { "description": "Excluído sem corpo" },
+      "Unauthorized": { "description": "Token ausente ou inválido", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Message" } } } },
+      "Forbidden": { "description": "Recurso pertence a outro usuário", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Message" } } } },
+      "NotFound": { "description": "Recurso inexistente", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Message" } } } },
+      "ValidationError": { "description": "Falha de validação", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ValidationError" } } } },
+      "TooManyRequests": { "description": "Limite excedido; Retry-After informa quando repetir", "headers": { "Retry-After": { "schema": { "type": "integer" } } }, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Message" } } } }
+    },
+    "schemas": {
+      "TaskStatus": { "type": "string", "enum": ["pending", "in_progress", "completed", "cancelled"] },
+      "TaskPriority": { "type": "string", "enum": ["low", "medium", "high"] },
+      "User": { "type": "object", "required": ["id", "name", "email", "timezone", "deadline_notifications_enabled"], "properties": { "id": { "type": "integer" }, "name": { "type": "string" }, "email": { "type": "string", "format": "email" }, "email_verified_at": { "type": ["string", "null"], "format": "date-time" }, "timezone": { "type": "string" }, "deadline_notifications_enabled": { "type": "boolean" }, "created_at": { "type": ["string", "null"], "format": "date-time" }, "updated_at": { "type": ["string", "null"], "format": "date-time" } } },
+      "Tag": { "type": "object", "required": ["id", "name"], "properties": { "id": { "type": "integer" }, "name": { "type": "string" }, "created_at": { "type": ["string", "null"], "format": "date-time" }, "updated_at": { "type": ["string", "null"], "format": "date-time" } } },
+      "Category": { "$ref": "#/components/schemas/Tag" },
+      "Project": { "type": "object", "required": ["id", "name"], "properties": { "id": { "type": "integer" }, "name": { "type": "string" }, "description": { "type": ["string", "null"] }, "created_at": { "type": ["string", "null"], "format": "date-time" }, "updated_at": { "type": ["string", "null"], "format": "date-time" } } },
+      "Task": { "type": "object", "required": ["id", "title", "status", "priority", "tags", "is_overdue"], "properties": { "id": { "type": "integer" }, "project_id": { "type": ["integer", "null"] }, "category_id": { "type": ["integer", "null"] }, "parent_id": { "type": ["integer", "null"] }, "tags": { "type": "array", "items": { "$ref": "#/components/schemas/Tag" } }, "title": { "type": "string" }, "description": { "type": ["string", "null"] }, "status": { "$ref": "#/components/schemas/TaskStatus" }, "priority": { "$ref": "#/components/schemas/TaskPriority" }, "due_date": { "type": ["string", "null"], "format": "date" }, "is_overdue": { "type": "boolean" }, "created_at": { "type": ["string", "null"], "format": "date-time" }, "updated_at": { "type": ["string", "null"], "format": "date-time" } } },
+      "Comment": { "type": "object", "properties": { "id": { "type": "integer" }, "task_id": { "type": "integer" }, "body": { "type": "string" }, "author": { "$ref": "#/components/schemas/Actor" }, "created_at": { "type": ["string", "null"], "format": "date-time" } } },
+      "Activity": { "type": "object", "properties": { "id": { "type": "integer" }, "type": { "type": "string", "enum": ["created", "updated"] }, "changes": { "type": "object", "additionalProperties": { "type": "object", "properties": { "old": {}, "new": {} } } }, "actor": { "$ref": "#/components/schemas/Actor" }, "created_at": { "type": ["string", "null"], "format": "date-time" } } },
+      "Actor": { "type": "object", "required": ["id", "name"], "properties": { "id": { "type": "integer" }, "name": { "type": "string" } } },
+      "RegisterInput": { "type": "object", "required": ["name", "email", "password", "password_confirmation"], "properties": { "name": { "type": "string", "maxLength": 255 }, "email": { "type": "string", "format": "email", "maxLength": 255 }, "password": { "type": "string", "format": "password", "minLength": 8 }, "password_confirmation": { "type": "string", "format": "password" } } },
+      "LoginInput": { "type": "object", "required": ["email", "password"], "properties": { "email": { "type": "string", "format": "email" }, "password": { "type": "string", "format": "password" } } },
+      "PreferencesInput": { "type": "object", "minProperties": 1, "properties": { "timezone": { "type": "string", "examples": ["America/Sao_Paulo"] }, "deadline_notifications_enabled": { "type": "boolean" } } },
+      "TaskInput": { "type": "object", "required": ["title"], "properties": { "title": { "type": "string", "maxLength": 255 }, "description": { "type": ["string", "null"] }, "status": { "$ref": "#/components/schemas/TaskStatus" }, "priority": { "$ref": "#/components/schemas/TaskPriority" }, "due_date": { "type": ["string", "null"], "format": "date" }, "project_id": { "type": ["integer", "null"] }, "category_id": { "type": ["integer", "null"] }, "parent_id": { "type": ["integer", "null"] }, "tag_ids": { "type": "array", "maxItems": 20, "uniqueItems": true, "items": { "type": "integer" } } } },
+      "TaskUpdateInput": { "type": "object", "minProperties": 1, "properties": { "title": { "type": "string", "maxLength": 255 }, "description": { "type": ["string", "null"] }, "status": { "$ref": "#/components/schemas/TaskStatus" }, "priority": { "$ref": "#/components/schemas/TaskPriority" }, "due_date": { "type": ["string", "null"], "format": "date" }, "project_id": { "type": ["integer", "null"] }, "category_id": { "type": ["integer", "null"] }, "parent_id": { "type": ["integer", "null"] }, "tag_ids": { "type": "array", "maxItems": 20, "uniqueItems": true, "items": { "type": "integer" } } } },
+      "ProjectInput": { "type": "object", "required": ["name"], "properties": { "name": { "type": "string", "maxLength": 150 }, "description": { "type": ["string", "null"] } } },
+      "ProjectUpdateInput": { "type": "object", "minProperties": 1, "properties": { "name": { "type": "string", "maxLength": 150 }, "description": { "type": ["string", "null"] } } },
+      "Message": { "type": "object", "required": ["message"], "properties": { "message": { "type": "string" } } },
+      "ValidationError": { "type": "object", "required": ["message", "errors"], "properties": { "message": { "type": "string" }, "errors": { "type": "object", "additionalProperties": { "type": "array", "items": { "type": "string" } } } } },
+      "PaginationMeta": { "type": "object", "required": ["current_page", "last_page", "per_page", "total"], "properties": { "current_page": { "type": "integer" }, "from": { "type": ["integer", "null"] }, "last_page": { "type": "integer" }, "path": { "type": "string" }, "per_page": { "type": "integer" }, "to": { "type": ["integer", "null"] }, "total": { "type": "integer" } } },
+      "PaginationLinks": { "type": "object", "properties": { "first": { "type": ["string", "null"] }, "last": { "type": ["string", "null"] }, "prev": { "type": ["string", "null"] }, "next": { "type": ["string", "null"] } } },
+      "UserEnvelope": { "type": "object", "properties": { "data": { "type": "object", "properties": { "user": { "$ref": "#/components/schemas/User" } } } } },
+      "TaskEnvelope": { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/Task" } } },
+      "ProjectEnvelope": { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/Project" } } },
+      "CategoryEnvelope": { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/Category" } } },
+      "TagEnvelope": { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/Tag" } } },
+      "CommentEnvelope": { "type": "object", "properties": { "data": { "$ref": "#/components/schemas/Comment" } } },
+      "PaginatedTasks": { "$ref": "#/components/schemas/PaginatedTasksBody" },
+      "PaginatedTasksBody": { "type": "object", "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/Task" } }, "links": { "$ref": "#/components/schemas/PaginationLinks" }, "meta": { "$ref": "#/components/schemas/PaginationMeta" } } },
+      "PaginatedProjects": { "type": "object", "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/Project" } }, "links": { "$ref": "#/components/schemas/PaginationLinks" }, "meta": { "$ref": "#/components/schemas/PaginationMeta" } } },
+      "PaginatedCategories": { "type": "object", "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/Category" } }, "links": { "$ref": "#/components/schemas/PaginationLinks" }, "meta": { "$ref": "#/components/schemas/PaginationMeta" } } },
+      "PaginatedTags": { "type": "object", "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/Tag" } }, "links": { "$ref": "#/components/schemas/PaginationLinks" }, "meta": { "$ref": "#/components/schemas/PaginationMeta" } } },
+      "PaginatedComments": { "type": "object", "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/Comment" } }, "links": { "$ref": "#/components/schemas/PaginationLinks" }, "meta": { "$ref": "#/components/schemas/PaginationMeta" } } },
+      "PaginatedActivities": { "type": "object", "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/Activity" } }, "links": { "$ref": "#/components/schemas/PaginationLinks" }, "meta": { "$ref": "#/components/schemas/PaginationMeta" } } }
+    }
+  }
+}
