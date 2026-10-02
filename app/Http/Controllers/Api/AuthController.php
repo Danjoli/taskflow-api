@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RegisterRequest;
+use App\Http\Requests\UpdateNotificationPreferencesRequest;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -65,6 +66,18 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'Logout realizado com sucesso.',
+        ]);
+    }
+
+    public function updatePreferences(
+        UpdateNotificationPreferencesRequest $request
+    ): JsonResponse {
+        $request->user()->update($request->validated());
+
+        return response()->json([
+            'data' => [
+                'user' => $request->user()->refresh(),
+            ],
         ]);
     }
 }
