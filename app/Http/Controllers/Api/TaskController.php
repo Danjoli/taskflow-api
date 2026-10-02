@@ -10,13 +10,19 @@ use App\Http\Requests\StoreTaskRequest;
 use App\Http\Requests\UpdateTaskRequest;
 use App\Http\Resources\TaskResource;
 use App\Models\Task;
+use App\Services\TaskActivityRecorder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 
 class TaskController extends Controller
 {
+    public function __construct(
+        private readonly TaskActivityRecorder $activityRecorder
+    ) {}
+
     /**
      * Display a listing of the resource.
      */
@@ -78,12 +84,15 @@ class TaskController extends Controller
         $tagIds = $validated['tag_ids'] ?? [];
         unset($validated['tag_ids']);
 
-        $task = $request->user()
-            ->tasks()
-            ->create($validated);
+        $task = DB::transaction(function () use ($request, $validated, $tagIds) {
+            $task = $request->user()->tasks()->create($validated);
+            $task->tags()->sync($tagIds);
+            $task->refresh();
 
-        $task->tags()->sync($tagIds);
-        $task->refresh()->load('tags');
+            $this->activityRecorder->recordCreated($task, $request->user());
+
+            return $task->load('tags');
+        });
 
         return (new TaskResource($task))
             ->response()
@@ -110,11 +119,35 @@ class TaskController extends Controller
         $tagIds = $validated['tag_ids'] ?? [];
         unset($validated['tag_ids']);
 
-        $task->update($validated);
+        DB::transaction(function () use (
+            $request,
+            $task,
+            $validated,
+            $hasTagIds,
+            $tagIds
+        ): void {
+            $beforeAttributes = array_intersect_key(
+                $task->getRawOriginal(),
+                $validated
+            );
+            $beforeTagIds = $hasTagIds
+                ? $task->tags()->pluck('tags.id')->all()
+                : null;
 
-        if ($hasTagIds) {
-            $task->tags()->sync($tagIds);
-        }
+            $task->update($validated);
+
+            if ($hasTagIds) {
+                $task->tags()->sync($tagIds);
+            }
+
+            $task->refresh();
+            $this->activityRecorder->recordUpdated(
+                $task,
+                $request->user(),
+                $beforeAttributes,
+                $beforeTagIds
+            );
+        });
 
         return new TaskResource($task->load('tags'));
     }
