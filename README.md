@@ -1,65 +1,100 @@
 # TaskFlow API
 
-API REST para gerenciamento de tarefas, desenvolvida com Laravel.
+[![CI](https://github.com/Danjoli/taskflow-api/actions/workflows/ci.yml/badge.svg)](https://github.com/Danjoli/taskflow-api/actions/workflows/ci.yml)
 
-## Documentação da API
+API REST multiusuário para organizar tarefas, projetos, categorias, tags,
+subtarefas, comentários e prazos. Construída com Laravel, autenticação via
+Sanctum, PostgreSQL como banco principal e Redis para cache e filas.
+
+## Funcionalidades
+
+- Cadastro, login, logout e identificação do usuário autenticado.
+- CRUD de tarefas, projetos, categorias e tags com isolamento por conta.
+- Prioridade, status, prazo, projeto, categoria e múltiplas tags por tarefa.
+- Subtarefas com um nível de profundidade.
+- Filtros combináveis, ordenação e paginação.
+- Comentários e histórico imutável de criação e alterações.
+- Lembretes de prazo em filas, respeitando o fuso horário do usuário.
+- Cache Redis para leituras individuais, com invalidação automática.
+- Rate limiting para cadastro, login e rotas autenticadas.
+- OpenAPI 3.1, análise estática, testes de integração e CI.
+
+## Tecnologias
+
+| Área | Tecnologia |
+| --- | --- |
+| Aplicação | PHP 8.5, Laravel 13 |
+| Autenticação | Laravel Sanctum 4 |
+| Persistência | PostgreSQL 18 |
+| Cache e filas | Redis 7, Predis 3 |
+| Testes | Pest 5, PHPUnit 13 |
+| Qualidade | Larastan/PHPStan, Laravel Pint |
+| Automação | GitHub Actions |
+
+## Arquitetura
+
+O projeto segue a estrutura convencional do Laravel, com separação por
+responsabilidade e Form Requests agrupados por domínio:
+
+```text
+app/
+├── Console/Commands    # diagnósticos, lembretes e prontidão de produção
+├── Data                # objetos de transporte internos
+├── Enums               # status, prioridade, prazo e tipos de atividade
+├── Http
+│   ├── Controllers/Api # orquestração HTTP
+│   ├── Requests        # validação e autorização por domínio
+│   └── Resources       # contratos explícitos de resposta JSON
+├── Jobs                # processamento assíncrono e lembretes
+├── Models              # entidades e relacionamentos Eloquent
+├── Notifications       # notificações de prazo
+├── Observers           # invalidação de cache
+├── Policies            # autorização por proprietário
+└── Services            # cache e registro de atividades
+```
+
+As requisições são validadas por Form Requests, as Policies restringem cada
+recurso ao proprietário e os Resources controlam os campos expostos. Operações
+compostas de tarefas e histórico usam transações quando precisam ser atômicas.
+
+## Documentação
 
 - [Especificação OpenAPI 3.1](docs/openapi.json)
 - [Guia com requisições e respostas](docs/api-examples.md)
 - [Coleção executável para clientes HTTP](docs/taskflow-api.http)
 - [Runbook de deploy e rollback](docs/deployment.md)
 
-## Tecnologias
+## Requisitos locais
 
-- PHP 8.5
-- Laravel 13
-- PostgreSQL 18
-- Pest 5
-- PHPUnit 13
-- Composer
+- PHP 8.3 ou superior, com extensões compatíveis com Laravel e PostgreSQL.
+- Composer 2.
+- PostgreSQL.
+- Redis ou Docker Desktop.
+- Node.js e npm para compilar os assets da página inicial.
+- Git.
 
-## Requisitos
+As versões usadas pelo CI são PHP 8.5 e PostgreSQL 18.
 
-Para executar o projeto localmente, é necessário ter:
+## Instalação rápida
 
-- PHP 8.5 ou versão compatível com as dependências
-- Composer
-- PostgreSQL
-- Redis ou Docker Desktop
-- Git
-
-## Instalação
-
-Clone o repositório:
+Clone e prepare a aplicação:
 
 ```bash
 git clone https://github.com/Danjoli/taskflow-api.git
 cd taskflow-api
-```
-
-Instale as dependências:
-
-```bash
 composer install
 ```
 
-Crie o arquivo de ambiente.
-
-No PowerShell:
+Crie o arquivo de ambiente e a chave:
 
 ```powershell
 Copy-Item .env.example .env
-```
-
-Gere a chave da aplicação:
-
-```bash
 php artisan key:generate
 ```
 
-## Configuração do banco de dados
+No Linux ou macOS, use `cp .env.example .env`.
 
-Crie um banco PostgreSQL para desenvolvimento e configure o arquivo `.env`:
+Crie o banco PostgreSQL e configure estas variáveis no `.env`:
 
 ```dotenv
 DB_CONNECTION=pgsql
@@ -70,46 +105,43 @@ DB_USERNAME=taskflow_app
 DB_PASSWORD=
 ```
 
-Preencha `DB_PASSWORD` com a senha local do usuário PostgreSQL.
-
-O banco e o usuário devem existir antes da execução das migrations.
-
-Execute:
-
-```bash
-php artisan migrate
-```
-
-## Configuração do Redis
-
-O projeto usa o cliente PHP `predis`, portanto não exige a extensão nativa
-`phpredis`. Para iniciar o Redis local com Docker:
+Inicie o Redis local e finalize a instalação:
 
 ```bash
 docker compose up -d redis
+php artisan migrate
+npm install
+npm run build
 ```
 
-As configurações padrão do `.env.example` usam três bancos separados:
+O cliente `predis` já faz parte do projeto; a extensão nativa `phpredis` não é
+obrigatória. O `.env.example` separa os bancos Redis de dados gerais, cache e
+filas.
 
-```dotenv
-REDIS_CLIENT=predis
-REDIS_HOST=127.0.0.1
-REDIS_PORT=6379
-REDIS_DB=0
-REDIS_CACHE_DB=1
-REDIS_QUEUE_DB=2
-TASK_CACHE_TTL=300
+## Executando localmente
+
+O comando abaixo inicia servidor, worker, logs e Vite em conjunto:
+
+```bash
+composer run dev
 ```
 
-As leituras individuais de tarefas usam Redis por cinco minutos. O cabeçalho
-`X-Task-Cache` informa `MISS` na primeira consulta e `HIT` nas seguintes,
-permitindo observar o ganho sem expor chaves internas. Defina
-`TASK_CACHE_TTL=0` para desabilitar efetivamente a retenção entre requisições.
+Para iniciar somente a API:
 
-Para provedores que entregam uma URL completa, preencha `REDIS_URL`. Nunca
-adicione senhas ou URLs reais ao repositório.
+```bash
+php artisan serve
+```
 
-Valide cada conexão configurada:
+A aplicação ficará disponível em `http://127.0.0.1:8000` e a API em
+`http://127.0.0.1:8000/api`.
+
+Para processar filas separadamente:
+
+```bash
+php artisan queue:work redis --queue=default --sleep=1 --tries=3 --timeout=60
+```
+
+Valide as conexões Redis com:
 
 ```bash
 php artisan redis:check
@@ -117,64 +149,61 @@ php artisan redis:check cache
 php artisan redis:check queue
 ```
 
-## Filas e workers
+## Endpoints principais
 
-Em desenvolvimento e produção, `QUEUE_CONNECTION=redis` envia jobs para o
-banco Redis reservado para filas. Inicie um worker:
+Todas as rotas protegidas usam `Authorization: Bearer <token>`.
 
-```bash
-php artisan queue:work redis --queue=default --sleep=1 --tries=3 --timeout=60
-```
+| Grupo | Método e rota | Finalidade |
+| --- | --- | --- |
+| Autenticação | `POST /api/register` | Criar conta e emitir token |
+| Autenticação | `POST /api/login` | Autenticar e emitir token |
+| Autenticação | `GET /api/me` | Consultar usuário atual |
+| Autenticação | `PATCH /api/me/preferences` | Alterar fuso e lembretes |
+| Autenticação | `POST /api/logout` | Revogar o token atual |
+| Tarefas | `GET, POST /api/tasks` | Listar, filtrar e criar |
+| Tarefas | `GET, PATCH, DELETE /api/tasks/{task}` | Consultar, atualizar e excluir |
+| Comentários | `GET, POST /api/tasks/{task}/comments` | Listar e comentar |
+| Comentários | `DELETE /api/tasks/{task}/comments/{comment}` | Excluir comentário |
+| Atividades | `GET /api/tasks/{task}/activities` | Consultar histórico |
+| Projetos | `GET, POST /api/projects` | Listar e criar |
+| Projetos | `GET, PATCH, DELETE /api/projects/{project}` | CRUD individual |
+| Categorias | `GET, POST /api/categories` | Listar e criar |
+| Categorias | `GET, PATCH, DELETE /api/categories/{category}` | CRUD individual |
+| Tags | `GET, POST /api/tags` | Listar e criar |
+| Tags | `GET, PATCH, DELETE /api/tags/{tag}` | CRUD individual |
 
-O worker deve permanecer ativo por um gerenciador de processos no ambiente de
-produção. Após cada deploy, solicite uma reinicialização graciosa:
+Filtros de tarefas: `status`, `priority`, `due_date`, `project_id`,
+`category_id`, `tag_id`, `parent_id` e `deadline`. Consulte o
+[guia de exemplos](docs/api-examples.md) para o fluxo completo.
 
-```bash
-php artisan queue:restart
-```
+## Demonstração rápida
 
-Consulte jobs que esgotaram as tentativas:
-
-```bash
-php artisan queue:failed
-```
-
-Para reprocessar ou remover uma falha:
-
-```bash
-php artisan queue:retry <id>
-php artisan queue:forget <id>
-```
-
-Para interromper o serviço local:
-
-```bash
-docker compose stop redis
-```
-
-## Executando a aplicação
-
-Inicie o servidor de desenvolvimento:
+Cadastre um usuário fictício:
 
 ```bash
-php artisan serve
+curl -X POST http://127.0.0.1:8000/api/register \
+  -H "Accept: application/json" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Usuário Exemplo","email":"usuario@example.test","password":"Password123!","password_confirmation":"Password123!"}'
 ```
 
-A aplicação estará disponível, por padrão, em:
+Use o valor retornado em `data.token` para criar uma tarefa:
 
-http://127.0.0.1:8000
-
-## Ambiente de testes
-
-Crie um banco PostgreSQL separado para testes, chamado `taskflow_test`.
-
-Crie o arquivo `.env.testing` a partir do `.env`:
-
-```powershell
-Copy-Item .env .env.testing
+```bash
+curl -X POST http://127.0.0.1:8000/api/tasks \
+  -H "Authorization: Bearer <SEU_TOKEN>" \
+  -H "Accept: application/json" \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Conhecer a TaskFlow API","priority":"high"}'
 ```
 
-No `.env.testing`, configure:
+Os exemplos usam apenas localhost, o domínio reservado `example.test` e
+placeholders. Nunca registre tokens ou credenciais reais no repositório.
+
+## Testes e qualidade
+
+Crie um banco PostgreSQL separado chamado `taskflow_test`, copie `.env` para
+`.env.testing` e defina:
 
 ```dotenv
 APP_ENV=testing
@@ -182,51 +211,43 @@ DB_CONNECTION=pgsql
 DB_DATABASE=taskflow_test
 ```
 
-Mantenha os demais parâmetros de conexão adequados ao seu PostgreSQL local.
-
-Execute as migrations no banco de testes:
+Não execute os testes contra bancos de desenvolvimento ou produção.
 
 ```bash
 php artisan migrate --env=testing
+php artisan test --compact
+composer analyse
+vendor/bin/pint --test
+composer validate --strict
 ```
 
-Execute os testes:
+O workflow [CI](.github/workflows/ci.yml) executa migrations e todas essas
+verificações em PostgreSQL a cada Pull Request direcionado à `main`.
+
+## Produção
+
+O arquivo [`.env.production.example`](.env.production.example) lista as
+variáveis de produção sem incluir segredos. Valide o ambiente antes do deploy:
 
 ```bash
-php artisan test
+php artisan app:production-check
 ```
 
-Ou diretamente com Pest:
+O [runbook de produção](docs/deployment.md) cobre build reproduzível, migrations,
+workers, scheduler, observabilidade, health check e rollback. O endpoint `/up`
+é destinado a balanceadores e monitores de disponibilidade.
 
-```powershell
-.\vendor\bin\pest
-```
+## Segurança e operação
 
-**Importante:** os testes de integração devem utilizar exclusivamente o banco `taskflow_test`. Não utilize o banco de desenvolvimento ou produção para executar testes.
-
-## Qualidade de código
-
-Verifique a formatação:
-
-```powershell
-.\vendor\bin\pint --test
-```
-
-Aplique as correções de formatação:
-
-```powershell
-.\vendor\bin\pint
-```
-
-Verifique as dependências:
-
-```bash
-composer validate
-composer check-platform-reqs
-```
+- Senhas são armazenadas com hash pelo Laravel.
+- Policies e queries por usuário evitam acesso entre contas.
+- Campos de propriedade são proibidos nas entradas e omitidos das respostas.
+- Login, cadastro e API autenticada possuem limites configuráveis.
+- Logs de produção vão para `stderr`; segredos devem ser injetados pelo provedor.
+- O cache de tarefas é isolado por usuário e invalidado após alterações.
+- O scheduler usa locks compartilhados para evitar execuções duplicadas.
 
 ## Status
 
-Projeto em desenvolvimento.
-
-Funcionalidades de autenticação, gerenciamento de tarefas, permissões e documentação da API serão implementadas nas próximas etapas.
+O escopo planejado da API está implementado, documentado e coberto pelo CI.
+Melhorias futuras devem ser abertas como issues e integradas por Pull Request.
