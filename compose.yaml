@@ -76,6 +76,11 @@ services:
     depends_on:
       app:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1/up"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
     restart: unless-stopped
 
   postgres:
@@ -155,6 +160,27 @@ services:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_healthy
+    restart: "no"
+
+  postman:
+    image: postman/newman:6-alpine
+    profiles: ["tools"]
+    command:
+      - run
+      - /etc/newman/TaskFlow-API.postman_collection.json
+      - --environment
+      - /etc/newman/TaskFlow-Local.postman_environment.json
+      - --env-var
+      - app_url=http://nginx
+      - --env-var
+      - base_url=http://nginx/api
+      - --reporters
+      - cli
+    volumes:
+      - ./docs/postman:/etc/newman:ro
+    depends_on:
+      nginx:
         condition: service_healthy
     restart: "no"
 

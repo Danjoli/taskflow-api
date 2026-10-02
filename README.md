@@ -62,6 +62,7 @@ compostas de tarefas e histórico usam transações quando precisam ser atômica
 - [Especificação OpenAPI 3.1](docs/openapi.json)
 - [Guia com requisições e respostas](docs/api-examples.md)
 - [Coleção executável para clientes HTTP](docs/taskflow-api.http)
+- [Coleção Postman e ambiente local](docs/postman/README.md)
 - [Runbook de deploy e rollback](docs/deployment.md)
 
 ## Requisitos locais
@@ -98,6 +99,7 @@ docker compose exec app php artisan about
 docker compose run --rm test
 docker compose exec app composer analyse
 docker compose exec app vendor/bin/pint --test
+docker compose run --rm postman
 ```
 
 Os testes usam o banco isolado `taskflow_test`; o serviço de teste nunca aponta

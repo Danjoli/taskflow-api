@@ -63,6 +63,21 @@ jobs:
       - name: Build development container
         run: docker build --target development --tag taskflow-api:ci .
 
+      - name: Run Postman end-to-end collection
+        env:
+          APP_PORT: 8001
+          DB_FORWARD_PORT: 5433
+          REDIS_FORWARD_PORT: 6380
+        run: docker compose run --rm postman
+
+      - name: Stop end-to-end environment
+        if: always()
+        env:
+          APP_PORT: 8001
+          DB_FORWARD_PORT: 5433
+          REDIS_FORWARD_PORT: 6380
+        run: docker compose down --volumes
+
       - name: Install dependencies
         run: composer install --no-interaction --prefer-dist --no-progress
 
