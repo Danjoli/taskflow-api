@@ -12,8 +12,10 @@ use App\Http\Requests\UpdateTaskRequest;
 use App\Http\Resources\TaskResource;
 use App\Models\Task;
 use App\Services\TaskActivityRecorder;
+use App\Services\TaskCache;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
@@ -22,7 +24,8 @@ use Illuminate\Support\Facades\Gate;
 class TaskController extends Controller
 {
     public function __construct(
-        private readonly TaskActivityRecorder $activityRecorder
+        private readonly TaskActivityRecorder $activityRecorder,
+        private readonly TaskCache $taskCache
     ) {}
 
     /**
@@ -113,11 +116,16 @@ class TaskController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Task $task): TaskResource
+    public function show(Request $request, string $task): JsonResponse
     {
-        Gate::authorize('view', $task);
+        $result = $this->taskCache->find($request->user(), (int) $task);
+        $response = (new TaskResource($result->task))->response();
+        $response->headers->set(
+            'X-Task-Cache',
+            $result->hit ? 'HIT' : 'MISS'
+        );
 
-        return new TaskResource($task->load('tags'));
+        return $response;
     }
 
     /**
@@ -159,6 +167,8 @@ class TaskController extends Controller
                 $beforeTagIds
             );
         });
+
+        $this->taskCache->forget($task->user_id, $task->id);
 
         return new TaskResource($task->load('tags'));
     }
