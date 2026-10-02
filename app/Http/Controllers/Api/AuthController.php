@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Http\Requests\UpdateNotificationPreferencesRequest;
+use App\Http\Resources\UserResource;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -22,7 +23,7 @@ class AuthController extends Controller
         return response()->json([
             'message' => 'Usuário cadastrado com sucesso.',
             'data' => [
-                'user' => $user,
+                'user' => new UserResource($user),
                 'token' => $token,
             ],
         ], 201);
@@ -45,7 +46,7 @@ class AuthController extends Controller
         return response()->json([
             'message' => 'Login realizado com sucesso.',
             'data' => [
-                'user' => $user,
+                'user' => new UserResource($user),
                 'token' => $token,
             ],
         ]);
@@ -55,7 +56,7 @@ class AuthController extends Controller
     {
         return response()->json([
             'data' => [
-                'user' => $request->user(),
+                'user' => new UserResource($request->user()),
             ],
         ]);
     }
@@ -76,7 +77,7 @@ class AuthController extends Controller
 
         return response()->json([
             'data' => [
-                'user' => $request->user()->refresh(),
+                'user' => new UserResource($request->user()->refresh()),
             ],
         ]);
     }
