@@ -6,9 +6,9 @@ namespace App\Http\Controllers\Api;
 
 use App\Enums\TaskDeadlineFilter;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\IndexTaskRequest;
-use App\Http\Requests\StoreTaskRequest;
-use App\Http\Requests\UpdateTaskRequest;
+use App\Http\Requests\Task\IndexTaskRequest;
+use App\Http\Requests\Task\StoreTaskRequest;
+use App\Http\Requests\Task\UpdateTaskRequest;
 use App\Http\Resources\TaskResource;
 use App\Jobs\ProcessTaskCreated;
 use App\Models\Task;

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Providers;
 
 use App\Models\Category;
@@ -18,18 +20,13 @@ use Illuminate\Support\Str;
 
 class AppServiceProvider extends ServiceProvider
 {
-    /**
-     * Register any application services.
-     */
-    public function register(): void
+    public function boot(): void
     {
-        //
+        $this->configureRateLimiting();
+        $this->registerModelObservers();
     }
 
-    /**
-     * Bootstrap any application services.
-     */
-    public function boot(): void
+    private function configureRateLimiting(): void
     {
         RateLimiter::for('login', function (Request $request) {
             $email = Str::lower((string) $request->input('email'));
@@ -43,14 +40,18 @@ class AppServiceProvider extends ServiceProvider
         )->by("ip:{$request->ip()}"));
 
         RateLimiter::for('api', function (Request $request) {
-            $key = $request->user()
-                ? "user:{$request->user()->getAuthIdentifier()}"
+            $user = $request->user();
+            $key = $user
+                ? "user:{$user->getAuthIdentifier()}"
                 : "ip:{$request->ip()}";
 
             return Limit::perMinute(config('taskflow.rate_limits.api_per_minute'))
                 ->by($key);
         });
+    }
 
+    private function registerModelObservers(): void
+    {
         Task::observe(TaskObserver::class);
         Project::observe(ProjectObserver::class);
         Category::observe(CategoryObserver::class);
