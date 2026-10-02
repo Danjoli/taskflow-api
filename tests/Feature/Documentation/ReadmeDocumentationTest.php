@@ -8,6 +8,7 @@ it('documents the project setup, usage, quality checks, and production flow', fu
     expect($contents)->not->toBeFalse()
         ->and($contents)->toContain(
             '## Arquitetura',
+            '## Ambiente Docker',
             '## Instalação rápida',
             '## Endpoints principais',
             '## Demonstração rápida',
@@ -27,4 +28,9 @@ it('keeps every referenced project document available', function (string $path) 
     'deployment runbook' => 'docs/deployment.md',
     'production environment example' => '.env.production.example',
     'CI workflow' => '.github/workflows/ci.yml',
+    'Docker image' => 'Dockerfile',
+    'Docker Compose environment' => 'compose.yaml',
+    'Nginx configuration' => 'docker/nginx/default.conf',
+    'PHP configuration' => 'docker/php/php.ini',
+    'PostgreSQL initialization' => 'docker/postgres/init-databases.sql',
 ]);
