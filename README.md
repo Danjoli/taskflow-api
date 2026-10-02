@@ -18,6 +18,7 @@ Para executar o projeto localmente, é necessário ter:
 - PHP 8.5 ou versão compatível com as dependências
 - Composer
 - PostgreSQL
+- Redis ou Docker Desktop
 - Git
 
 ## Instalação
@@ -70,6 +71,43 @@ Execute:
 
 ```bash
 php artisan migrate
+```
+
+## Configuração do Redis
+
+O projeto usa o cliente PHP `predis`, portanto não exige a extensão nativa
+`phpredis`. Para iniciar o Redis local com Docker:
+
+```bash
+docker compose up -d redis
+```
+
+As configurações padrão do `.env.example` usam três bancos separados:
+
+```dotenv
+REDIS_CLIENT=predis
+REDIS_HOST=127.0.0.1
+REDIS_PORT=6379
+REDIS_DB=0
+REDIS_CACHE_DB=1
+REDIS_QUEUE_DB=2
+```
+
+Para provedores que entregam uma URL completa, preencha `REDIS_URL`. Nunca
+adicione senhas ou URLs reais ao repositório.
+
+Valide cada conexão configurada:
+
+```bash
+php artisan redis:check
+php artisan redis:check cache
+php artisan redis:check queue
+```
+
+Para interromper o serviço local:
+
+```bash
+docker compose stop redis
 ```
 
 ## Executando a aplicação
