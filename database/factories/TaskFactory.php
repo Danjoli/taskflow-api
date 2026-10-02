@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use App\Enums\TaskPriority;
 use App\Enums\TaskStatus;
+use App\Models\Category;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
@@ -32,6 +33,13 @@ class TaskFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'project_id' => $project->id,
+        ]);
+    }
+
+    public function forCategory(Category $category): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'category_id' => $category->id,
         ]);
     }
 }

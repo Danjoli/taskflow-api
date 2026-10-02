@@ -52,6 +52,12 @@ class StoreTaskRequest extends FormRequest
                 Rule::exists('projects', 'id')
                     ->where(fn ($query) => $query->where('user_id', $this->user()->id)),
             ],
+            'category_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('categories', 'id')
+                    ->where(fn ($query) => $query->where('user_id', $this->user()->id)),
+            ],
         ];
     }
 }

@@ -19,6 +19,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'priority',
     'due_date',
     'project_id',
+    'category_id',
 ])]
 #[Hidden([])]
 class Task extends Model
@@ -46,5 +47,10 @@ class Task extends Model
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
+    }
+
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(Category::class);
     }
 }
