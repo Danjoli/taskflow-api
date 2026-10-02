@@ -33,6 +33,13 @@ class UpdateTaskRequest extends FormRequest
             'priority' => ['sometimes', 'required', Rule::enum(TaskPriority::class)],
             'due_date' => ['sometimes', 'nullable', 'date_format:Y-m-d'],
             'user_id' => ['prohibited'],
+            'project_id' => [
+                'sometimes',
+                'nullable',
+                'integer',
+                Rule::exists('projects', 'id')
+                    ->where(fn ($query) => $query->where('user_id', $this->user()->id)),
+            ],
         ];
     }
 }
