@@ -1,7 +1,10 @@
 <?php
 
-namespace App\Http\Requests;
+declare(strict_types=1);
 
+namespace App\Http\Requests\Task;
+
+use App\Enums\TaskDeadlineFilter;
 use App\Enums\TaskPriority;
 use App\Enums\TaskStatus;
 use App\Models\Task;
@@ -10,14 +13,14 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 
-class StoreTaskRequest extends FormRequest
+class IndexTaskRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
      */
     public function authorize(): bool
     {
-        return Gate::allows('create', Task::class);
+        return Gate::allows('viewAny', Task::class);
     }
 
     /**
@@ -28,51 +31,63 @@ class StoreTaskRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'title' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
-
-            'status' => [
-                'sometimes',
-                'required',
-                Rule::enum(TaskStatus::class),
-            ],
-
-            'priority' => [
-                'sometimes',
-                'required',
-                Rule::enum(TaskPriority::class),
-            ],
-
-            'due_date' => ['nullable', 'date_format:Y-m-d'],
-            'user_id' => ['prohibited'],
-
+            'status' => ['sometimes', 'required', Rule::enum(TaskStatus::class)],
+            'priority' => ['sometimes', 'required', Rule::enum(TaskPriority::class)],
+            'due_date' => ['sometimes', 'required', 'date_format:Y-m-d'],
             'project_id' => [
-                'nullable',
+                'sometimes',
+                'required',
                 'integer',
                 Rule::exists('projects', 'id')
                     ->where(fn ($query) => $query->where('user_id', $this->user()->id)),
             ],
             'category_id' => [
-                'nullable',
+                'sometimes',
+                'required',
                 'integer',
                 Rule::exists('categories', 'id')
                     ->where(fn ($query) => $query->where('user_id', $this->user()->id)),
             ],
-            'tag_ids' => ['sometimes', 'array', 'max:20'],
-            'tag_ids.*' => [
+            'tag_id' => [
+                'sometimes',
+                'required',
                 'integer',
-                'distinct',
                 Rule::exists('tags', 'id')
                     ->where(fn ($query) => $query->where('user_id', $this->user()->id)),
             ],
             'parent_id' => [
-                'nullable',
+                'sometimes',
+                'required',
                 'integer',
                 Rule::exists('tasks', 'id')->where(
                     fn ($query) => $query
                         ->where('user_id', $this->user()->id)
                         ->whereNull('parent_id')
                 ),
+            ],
+            'deadline' => [
+                'sometimes',
+                'required',
+                Rule::enum(TaskDeadlineFilter::class),
+            ],
+            'days' => [
+                'sometimes',
+                'integer',
+                'min:1',
+                'max:365',
+                'prohibited_unless:deadline,due_soon',
+            ],
+            'page' => ['sometimes', 'required', 'integer', 'min:1'],
+
+            'sort_by' => [
+                'sometimes',
+                'required',
+                Rule::in(['created_at', 'due_date', 'title']),
+            ],
+            'sort_direction' => [
+                'sometimes',
+                'required',
+                Rule::in(['asc', 'desc']),
             ],
         ];
     }
