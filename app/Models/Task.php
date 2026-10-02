@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'status',
     'priority',
     'due_date',
+    'project_id',
 ])]
 #[Hidden([])]
 class Task extends Model
