@@ -117,7 +117,9 @@ it('allows creating a task associated with the users project', function () {
         'project_id' => $project->id,
     ]);
 
-    $response->assertCreated();
+    $response
+        ->assertCreated()
+        ->assertJsonPath('data.project_id', $project->id);
 
     $this->assertDatabaseHas('tasks', [
         'user_id' => $user->id,

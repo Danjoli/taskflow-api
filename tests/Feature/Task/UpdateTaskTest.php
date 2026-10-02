@@ -147,7 +147,9 @@ it('allows assigning a task to the users project', function () {
 
     $this->patchJson("/api/tasks/{$task->id}", [
         'project_id' => $project->id,
-    ])->assertOk();
+    ])
+        ->assertOk()
+        ->assertJsonPath('data.project_id', $project->id);
 
     $this->assertDatabaseHas('tasks', [
         'id' => $task->id,
@@ -199,7 +201,9 @@ it('allows removing a task from a project', function () {
 
     $this->patchJson("/api/tasks/{$task->id}", [
         'project_id' => null,
-    ])->assertOk();
+    ])
+        ->assertOk()
+        ->assertJsonPath('data.project_id', null);
 
     $this->assertDatabaseHas('tasks', [
         'id' => $task->id,
