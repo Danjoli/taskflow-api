@@ -2,6 +2,12 @@
 
 API REST para gerenciamento de tarefas, desenvolvida com Laravel.
 
+## Documentação da API
+
+- [Especificação OpenAPI 3.1](docs/openapi.json)
+- [Guia com requisições e respostas](docs/api-examples.md)
+- [Coleção executável para clientes HTTP](docs/taskflow-api.http)
+
 ## Tecnologias
 
 - PHP 8.5

@@ -1,0 +1,134 @@
+@baseUrl = http://127.0.0.1:8000/api
+@token = COLE_AQUI_UM_TOKEN_LOCAL
+@projectId = 1
+@categoryId = 1
+@tagId = 1
+@taskId = 1
+@commentId = 1
+
+### Cadastrar usuário
+POST {{baseUrl}}/register
+Accept: application/json
+Content-Type: application/json
+
+{
+  "name": "Usuário Exemplo",
+  "email": "usuario@example.test",
+  "password": "Password123!",
+  "password_confirmation": "Password123!"
+}
+
+### Login
+POST {{baseUrl}}/login
+Accept: application/json
+Content-Type: application/json
+
+{
+  "email": "usuario@example.test",
+  "password": "Password123!"
+}
+
+### Usuário atual
+GET {{baseUrl}}/me
+Accept: application/json
+Authorization: Bearer {{token}}
+
+### Criar projeto
+POST {{baseUrl}}/projects
+Accept: application/json
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Lançamento",
+  "description": "Entrega da primeira versão"
+}
+
+### Criar categoria
+POST {{baseUrl}}/categories
+Accept: application/json
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Backend"
+}
+
+### Criar tag
+POST {{baseUrl}}/tags
+Accept: application/json
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "urgente"
+}
+
+### Criar tarefa
+POST {{baseUrl}}/tasks
+Accept: application/json
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Publicar API",
+  "priority": "high",
+  "project_id": {{projectId}},
+  "category_id": {{categoryId}},
+  "tag_ids": [{{tagId}}]
+}
+
+### Listar e filtrar tarefas
+GET {{baseUrl}}/tasks?project_id={{projectId}}&priority=high&sort_by=due_date&sort_direction=asc&page=1
+Accept: application/json
+Authorization: Bearer {{token}}
+
+### Obter tarefa
+GET {{baseUrl}}/tasks/{{taskId}}
+Accept: application/json
+Authorization: Bearer {{token}}
+
+### Atualizar tarefa
+PATCH {{baseUrl}}/tasks/{{taskId}}
+Accept: application/json
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "status": "in_progress"
+}
+
+### Criar comentário
+POST {{baseUrl}}/tasks/{{taskId}}/comments
+Accept: application/json
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "body": "Pronta para revisão"
+}
+
+### Listar comentários
+GET {{baseUrl}}/tasks/{{taskId}}/comments
+Accept: application/json
+Authorization: Bearer {{token}}
+
+### Listar histórico
+GET {{baseUrl}}/tasks/{{taskId}}/activities
+Accept: application/json
+Authorization: Bearer {{token}}
+
+### Excluir comentário
+DELETE {{baseUrl}}/tasks/{{taskId}}/comments/{{commentId}}
+Accept: application/json
+Authorization: Bearer {{token}}
+
+### Excluir tarefa
+DELETE {{baseUrl}}/tasks/{{taskId}}
+Accept: application/json
+Authorization: Bearer {{token}}
+
+### Logout
+POST {{baseUrl}}/logout
+Accept: application/json
+Authorization: Bearer {{token}}
